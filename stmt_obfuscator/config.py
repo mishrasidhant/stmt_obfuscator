@@ -33,6 +33,14 @@ RAG_ENABLED = True
 MAX_PAGE_SIZE = 5 * 1024 * 1024  # 5MB
 MAX_DOCUMENT_SIZE = 50 * 1024 * 1024  # 50MB
 
+# PDF export configuration
+PDF_EXPORT_ENABLED = True
+PDF_DEFAULT_FONT = "Helvetica"
+PDF_FONT_SIZE = 11
+PDF_MARGIN = 72  # 1 inch in points
+PDF_INCLUDE_TIMESTAMP = True
+PDF_INCLUDE_METADATA = True
+
 # UI configuration
 UI_THEME = "light"  # "light" or "dark"
 UI_FONT_SIZE = 12
@@ -53,6 +61,14 @@ def get_default_config() -> Dict[str, Any]:
         "pdf_processing": {
             "max_page_size": MAX_PAGE_SIZE,
             "max_document_size": MAX_DOCUMENT_SIZE,
+        },
+        "pdf_export": {
+            "enabled": PDF_EXPORT_ENABLED,
+            "default_font": PDF_DEFAULT_FONT,
+            "font_size": PDF_FONT_SIZE,
+            "margin": PDF_MARGIN,
+            "include_timestamp": PDF_INCLUDE_TIMESTAMP,
+            "include_metadata": PDF_INCLUDE_METADATA,
         },
         "ui": {
             "theme": UI_THEME,

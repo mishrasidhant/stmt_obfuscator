@@ -48,6 +48,7 @@ from PyQt6.QtWidgets import (
 from stmt_obfuscator.pdf_parser.parser import PDFParser
 from stmt_obfuscator.pii_detection.detector import PIIDetector
 from stmt_obfuscator.obfuscation.obfuscator import Obfuscator
+from stmt_obfuscator.output_generator.generator import OutputGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -466,11 +467,20 @@ class MainWindow(QMainWindow):
 
         # Add preview controls
         controls_layout = QHBoxLayout()
-
+        
+        # Add output format selection
+        format_layout = QHBoxLayout()
+        format_label = QLabel("Output Format:")
+        self.output_format = QComboBox()
+        self.output_format.addItems(["Text", "PDF"])
+        format_layout.addWidget(format_label)
+        format_layout.addWidget(self.output_format)
+        
         self.preview_button = QPushButton("Generate Preview")
         self.preview_button.clicked.connect(self._generate_preview)
         self.preview_button.setEnabled(False)
-
+        
+        controls_layout.addLayout(format_layout)
         controls_layout.addStretch()
         controls_layout.addWidget(self.preview_button)
 
@@ -945,22 +955,29 @@ class MainWindow(QMainWindow):
         """Handle saving the obfuscated file."""
         if not self.processing_result:
             return
-
+        
+        # Get the selected output format
+        output_format = self.output_format.currentText().lower()
+        
         # Get the output file path
         input_path = Path(self.pdf_path)
-        default_output_path = input_path.with_stem(f"{input_path.stem}_obfuscated").with_suffix(".txt")
-
+        file_extension = ".pdf" if output_format == "pdf" else ".txt"
+        default_output_path = input_path.with_stem(f"{input_path.stem}_obfuscated").with_suffix(file_extension)
+        
+        file_filter = "PDF Files (*.pdf)" if output_format == "pdf" else "Text Files (*.txt)"
+        dialog_title = "Save Obfuscated PDF" if output_format == "pdf" else "Save Obfuscated Text"
+        
         output_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Obfuscated Text", str(default_output_path), "Text Files (*.txt)"
+            self, dialog_title, str(default_output_path), file_filter
         )
-
+        
         if not output_path:
             return
-
+        
         # Show a progress dialog
-        self.status_bar.showMessage("Saving obfuscated file...")
+        self.status_bar.showMessage(f"Saving obfuscated file as {output_format}...")
         self.progress_bar.setValue(0)
-
+        
         try:
             # Get the selected entities for obfuscation
             selected_entities = [
@@ -968,33 +985,44 @@ class MainWindow(QMainWindow):
                 for i, entity in enumerate(self.pii_entities)
                 if self.entity_inclusion.get(i, True)
             ]
-
+            
             # Get the obfuscator from the processing result
             obfuscator = self.processing_result["obfuscator"]
             document = self.processing_result["document"]
-
+            
             # Obfuscate the document
-            self.progress_bar.setValue(50)
+            self.progress_bar.setValue(30)
             obfuscated_document = obfuscator.obfuscate_document(
                 document, selected_entities
             )
-
-            # Save the obfuscated document
-            self.progress_bar.setValue(90)
-
-            # Save as text file
-            with open(output_path, "w") as f:
-                f.write(obfuscated_document.get("full_text", ""))
-
-            self.progress_bar.setValue(100)
-            self.status_bar.showMessage(f"Saved obfuscated text to {output_path}")
-
-            QMessageBox.information(
-                self, "File Saved",
-                f"Obfuscated text saved to:\n{output_path}\n\n"
-                f"Note: Currently, the application saves the obfuscated content as a text file. "
-                f"PDF generation will be implemented in a future version."
+            
+            # Create an output generator
+            output_generator = OutputGenerator()
+            
+            # Generate the output
+            self.progress_bar.setValue(60)
+            success = output_generator.generate_output(
+                obfuscated_document,
+                output_path,
+                format=output_format
             )
+            
+            self.progress_bar.setValue(100)
+            
+            if success:
+                self.status_bar.showMessage(f"Saved obfuscated {output_format} to {output_path}")
+                
+                QMessageBox.information(
+                    self, "File Saved",
+                    f"Obfuscated {output_format} saved to:\n{output_path}"
+                )
+            else:
+                self.status_bar.showMessage(f"Error saving obfuscated {output_format}")
+                
+                QMessageBox.critical(
+                    self, "Save Error",
+                    f"Failed to save obfuscated {output_format} to {output_path}"
+                )
 
         except Exception as e:
             logger.error(f"Error saving file: {e}")
