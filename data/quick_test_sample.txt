@@ -1,0 +1,46 @@
+
+Wells Fargo
+9407 Teresa Lane Apt. 849, Barbaraland, AZ 87174
+Phone: 441.731.6475
+Website: www.clark-adams.com
+
+ACCOUNT STATEMENT
+
+Statement Period: 05/09/2025 - 06/08/2025
+
+CUSTOMER INFORMATION:
+Allison Hill
+819 Johnson Course, East William, AK 74064
+Phone: 886.737.9402
+Email: eric51@example.org
+
+ACCOUNT SUMMARY:
+Account Number: XXXX-XXXX-XXXX-2412
+Routing Number: 219540831
+Beginning Balance: $712.72
+Ending Balance: $2072.82
+
+TRANSACTION HISTORY:
+Date       Description                                Amount      Balance
+----------------------------------------------------------------------------------
+05/09/2025 WITHDRAWAL                               $ -352.58  $    360.14
+05/13/2025 INTEREST                                 $ -100.22  $   2662.80
+05/14/2025 PURCHASE - TARGET                        $  -44.38  $   2873.12
+05/15/2025 WITHDRAWAL                               $ -442.84  $    712.72
+05/20/2025 TRANSFER TO ACCOUNT 1106                 $ -210.34  $   2452.46
+05/25/2025 ATM WITHDRAWAL                           $  -52.00  $   1850.03
+05/27/2025 INTEREST                                 $ -368.50  $   2917.50
+05/28/2025 ATM WITHDRAWAL                           $ -170.79  $   1902.03
+05/29/2025 PURCHASE - MARRIOTT                      $ -423.90  $   1426.13
+05/30/2025 PURCHASE - SHELL                         $ -110.10  $   2763.02
+06/01/2025 FEE                                      $  -40.32  $   1155.56
+06/03/2025 CHECK                                    $ -230.25  $   1195.88
+06/07/2025 CHECK                                    $ -379.64  $   2072.82
+
+----------------------------------------------------------------------------------
+
+For questions about your account, please contact us at:
+Phone: 441.731.6475
+Email: customer.service@clark-adams.com
+
+Thank you for banking with Wells Fargo!
