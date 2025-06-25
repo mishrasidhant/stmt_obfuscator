@@ -1,0 +1,82 @@
+{
+  "entities": [
+    {
+      "type": "PERSON_NAME",
+      "text": "Gregory Lewis",
+      "start": 185,
+      "end": 198
+    },
+    {
+      "type": "ADDRESS",
+      "text": "979 Gardner Expressway, Port Hollystad, VI 84421",
+      "start": 199,
+      "end": 247
+    },
+    {
+      "type": "PHONE_NUMBER",
+      "text": "+1-573-734-6685x07971",
+      "start": 255,
+      "end": 276
+    },
+    {
+      "type": "EMAIL",
+      "text": "shannonlori@example.com",
+      "start": 284,
+      "end": 307
+    },
+    {
+      "type": "ROUTING_NUMBER",
+      "text": "198910688",
+      "start": 378,
+      "end": 387
+    },
+    {
+      "type": "ORGANIZATION_NAME",
+      "text": "Citibank",
+      "start": 1,
+      "end": 9
+    },
+    {
+      "type": "ORGANIZATION_NAME",
+      "text": "Citibank",
+      "start": 1821,
+      "end": 1829
+    },
+    {
+      "type": "ADDRESS",
+      "text": "07300 Evans Mews Apt. 827, Danahaven, OR 61431",
+      "start": 10,
+      "end": 56
+    },
+    {
+      "type": "PHONE_NUMBER",
+      "text": "783.918.9362",
+      "start": 64,
+      "end": 76
+    },
+    {
+      "type": "PHONE_NUMBER",
+      "text": "783.918.9362",
+      "start": 1746,
+      "end": 1758
+    },
+    {
+      "type": "WEBSITE",
+      "text": "www.lynch.net",
+      "start": 86,
+      "end": 99
+    },
+    {
+      "type": "PERSON_NAME",
+      "text": "ACCOUNT 9260",
+      "start": 1018,
+      "end": 1030
+    },
+    {
+      "type": "PERSON_NAME",
+      "text": "ACCOUNT 2456",
+      "start": 1396,
+      "end": 1408
+    }
+  ]
+}

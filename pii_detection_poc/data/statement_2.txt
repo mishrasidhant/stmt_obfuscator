@@ -1,0 +1,46 @@
+
+Citibank
+07300 Evans Mews Apt. 827, Danahaven, OR 61431
+Phone: 783.918.9362
+Website: www.lynch.net
+
+ACCOUNT STATEMENT
+
+Statement Period: 05/08/2025 - 06/07/2025
+
+CUSTOMER INFORMATION:
+Gregory Lewis
+979 Gardner Expressway, Port Hollystad, VI 84421
+Phone: +1-573-734-6685x07971
+Email: shannonlori@example.com
+
+ACCOUNT SUMMARY:
+Account Number: XXXX-XXXX-XXXX-9094
+Routing Number: 198910688
+Beginning Balance: $4796.00
+Ending Balance: $2444.15
+
+TRANSACTION HISTORY:
+Date       Description                                Amount      Balance
+----------------------------------------------------------------------------------
+05/08/2025 FEE                                      $ -425.03  $   4370.97
+05/11/2025 WITHDRAWAL                               $  -12.12  $   3233.61
+05/13/2025 ATM WITHDRAWAL                           $ -221.17  $   1422.26
+05/18/2025 DIRECT DEPOSIT - Boyer-Clarke            $ -357.45  $   3245.73
+05/18/2025 PURCHASE - SPOTIFY                       $ -187.10  $   2785.98
+05/19/2025 TRANSFER TO ACCOUNT 9260                 $ -150.07  $   3762.05
+05/20/2025 DIRECT DEPOSIT - Arnold, Lucas and Lawrence $ -260.53  $   2973.08
+05/25/2025 PURCHASE - STARBUCKS                     $ -321.06  $   2123.09
+05/26/2025 DIRECT DEPOSIT - Thornton-Young          $ -158.87  $   3603.18
+05/27/2025 WITHDRAWAL                               $ -458.85  $   3912.12
+05/27/2025 TRANSFER TO ACCOUNT 2456                 $ -371.11  $   1051.15
+05/30/2025 CHECK                                    $ -479.66  $   1643.43
+06/02/2025 DEPOSIT                                  $ -341.83  $   2444.15
+
+----------------------------------------------------------------------------------
+
+For questions about your account, please contact us at:
+Phone: 783.918.9362
+Email: customer.service@lynch.net
+
+Thank you for banking with Citibank!

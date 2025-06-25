@@ -1,0 +1,47 @@
+
+Capital One
+630 Matthew Drive Suite 808, Shaunbury, NJ 34291
+Phone: 857.339.4516x3248
+Website: www.martin.com
+
+ACCOUNT STATEMENT
+
+Statement Period: 05/11/2025 - 06/10/2025
+
+CUSTOMER INFORMATION:
+James Clark
+6829 Singh Ridge, Odombury, MH 47173
+Phone: (215)614-3199
+Email: johnsonjacqueline@example.com
+
+ACCOUNT SUMMARY:
+Account Number: XXXX-XXXX-XXXX-2236
+Routing Number: 580563171
+Beginning Balance: $6738.55
+Ending Balance: $6425.76
+
+TRANSACTION HISTORY:
+Date       Description                                Amount      Balance
+----------------------------------------------------------------------------------
+05/12/2025 FEE                                      $  310.88  $   7049.43
+05/14/2025 DIRECT DEPOSIT - Holland, Duncan and Preston $ -214.46  $   6211.30
+05/15/2025 ATM WITHDRAWAL                           $ -254.22  $   6738.55
+05/20/2025 CHECK                                    $   -8.58  $   7048.40
+05/22/2025 PAYMENT - KROGER                         $  258.31  $   7134.12
+05/24/2025 TRANSFER TO Anthony Rodriguez            $ -297.77  $   6787.70
+05/24/2025 DIRECT DEPOSIT - Anderson Inc            $  -51.99  $   6370.79
+05/28/2025 DEPOSIT                                  $ -173.62  $   6875.81
+05/30/2025 FEE                                      $  -55.63  $   6992.77
+05/31/2025 DEPOSIT                                  $ -255.02  $   7056.98
+05/31/2025 DIRECT DEPOSIT - Fletcher, Stevenson and Patterson $ -278.04  $   6422.78
+06/01/2025 WITHDRAWAL                               $  -48.65  $   7085.47
+06/02/2025 ATM WITHDRAWAL                           $  489.52  $   6700.82
+06/06/2025 DIRECT DEPOSIT - Williams Inc            $ -361.94  $   6425.76
+
+----------------------------------------------------------------------------------
+
+For questions about your account, please contact us at:
+Phone: 857.339.4516x3248
+Email: customer.service@martin.com
+
+Thank you for banking with Capital One!
