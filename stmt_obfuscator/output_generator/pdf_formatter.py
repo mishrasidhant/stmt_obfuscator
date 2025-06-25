@@ -6,12 +6,13 @@ This module handles the formatting of PDF output files.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 import fitz  # PyMuPDF
 
 from stmt_obfuscator.config import (
     PDF_DEFAULT_FONT,
+    PDF_FONT_FALLBACKS,
     PDF_FONT_SIZE,
     PDF_INCLUDE_METADATA,
     PDF_INCLUDE_TIMESTAMP,
@@ -19,6 +20,45 @@ from stmt_obfuscator.config import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Default font fallback chain - use configuration if available
+DEFAULT_FONT_FALLBACKS = PDF_FONT_FALLBACKS + [
+    "Helvetica",  # Latin characters
+    "Times-Roman",  # Alternative for Latin
+    "Courier",  # Monospaced
+    "Symbol",  # Symbol characters
+    "ZapfDingbats",  # Dingbats
+]
+# Remove duplicates while preserving order
+DEFAULT_FONT_FALLBACKS = list(dict.fromkeys(DEFAULT_FONT_FALLBACKS))
+
+# Unicode block ranges for different scripts
+UNICODE_BLOCKS = {
+    "Basic Latin": (0x0000, 0x007F),
+    "Latin-1 Supplement": (0x0080, 0x00FF),
+    "Latin Extended-A": (0x0100, 0x017F),
+    "Latin Extended-B": (0x0180, 0x024F),
+    "Greek and Coptic": (0x0370, 0x03FF),
+    "Cyrillic": (0x0400, 0x04FF),
+    "Cyrillic Supplement": (0x0500, 0x052F),
+    "General Punctuation": (0x2000, 0x206F),
+    "Currency Symbols": (0x20A0, 0x20CF),
+    "Letterlike Symbols": (0x2100, 0x214F),
+    "Mathematical Operators": (0x2200, 0x22FF),
+    "Mathematical Symbols": (0x27C0, 0x27EF),
+    "Supplemental Mathematical Operators": (0x2A00, 0x2AFF),
+}
+
+# Map of Unicode blocks to appropriate fonts
+BLOCK_TO_FONT_MAP = {
+    "Greek and Coptic": "Symbol",
+    "Mathematical Operators": "Symbol",
+    "Mathematical Symbols": "Symbol",
+    "Supplemental Mathematical Operators": "Symbol",
+    "Currency Symbols": "Symbol",
+    "Letterlike Symbols": "Symbol",
+    "General Punctuation": "Symbol",
+}
 
 
 class PDFFormatter:
@@ -35,6 +75,7 @@ class PDFFormatter:
         margin: int = PDF_MARGIN,
         include_timestamp: bool = PDF_INCLUDE_TIMESTAMP,
         include_metadata: bool = PDF_INCLUDE_METADATA,
+        font_fallbacks: Optional[List[str]] = None,
     ):
         """
         Initialize the PDF formatter.
@@ -45,14 +86,26 @@ class PDFFormatter:
             margin: The margin to use for the PDF (in points)
             include_timestamp: Whether to include a timestamp in the PDF
             include_metadata: Whether to include metadata in the PDF
+            font_fallbacks: List of fallback fonts to use for characters not supported
+                by the primary font
         """
         self.font = font
         self.font_size = font_size
         self.margin = margin
         self.include_timestamp = include_timestamp
         self.include_metadata = include_metadata
+        self.font_fallbacks = font_fallbacks or DEFAULT_FONT_FALLBACKS
 
-        logger.info("Initialized PDFFormatter")
+        # Ensure the primary font is not duplicated in fallbacks
+        if self.font in self.font_fallbacks:
+            self.font_fallbacks.remove(self.font)
+
+        # Create a font cache to avoid repeated lookups
+        self.font_cache = {}
+
+        logger.info(
+            f"Initialized PDFFormatter with font fallbacks: {self.font_fallbacks}"
+        )
 
     def format_document(
         self, document: Dict[str, Any], pdf_doc: fitz.Document
@@ -119,11 +172,11 @@ class PDFFormatter:
             x = (page.rect.width - text_width) / 2
             y = self.margin / 2
 
-            # Insert the text
-            page.insert_text(
+            # Insert the text with font fallback support
+            self.insert_text_with_fallback(
+                page,
                 (x, y),
                 header_text,
-                fontname=self.font,
                 fontsize=self.font_size + 2,
                 color=(0, 0, 0),
             )
@@ -170,10 +223,8 @@ class PDFFormatter:
             words = paragraph.split()
 
             for word in words:
-                # Calculate word width
-                word_width = fitz.get_text_length(
-                    word, fontname=self.font, fontsize=self.font_size
-                )
+                # Calculate word width with font fallback consideration
+                word_width, _ = self.get_text_width_with_fallback(word, self.font_size)
 
                 # Handle special case: very long words (longer than available width)
                 if word_width > available_width:
@@ -185,18 +236,17 @@ class PDFFormatter:
 
                     # Split the long word
                     remaining_word = word
-                    while (
-                        remaining_word
-                        and fitz.get_text_length(
-                            remaining_word, fontname=self.font, fontsize=self.font_size
+                    while remaining_word:
+                        word_width, _ = self.get_text_width_with_fallback(
+                            remaining_word, self.font_size
                         )
-                        > available_width
-                    ):
+                        if word_width <= available_width:
+                            break
                         # Find the maximum characters that can fit
                         for i in range(len(remaining_word), 0, -1):
                             segment = remaining_word[:i]
-                            segment_width = fitz.get_text_length(
-                                segment, fontname=self.font, fontsize=self.font_size
+                            segment_width, _ = self.get_text_width_with_fallback(
+                                segment, self.font_size
                             )
                             if segment_width <= available_width:
                                 lines.append(segment)
@@ -210,13 +260,13 @@ class PDFFormatter:
                     # Add any remaining part of the word
                     if remaining_word:
                         current_line = [remaining_word]
-                        current_width = fitz.get_text_length(
-                            remaining_word, fontname=self.font, fontsize=self.font_size
+                        current_width, _ = self.get_text_width_with_fallback(
+                            remaining_word, self.font_size
                         )
                 else:
                     # Check if adding this word would exceed the available width
-                    space_width = fitz.get_text_length(
-                        " ", fontname=self.font, fontsize=self.font_size
+                    space_width, _ = self.get_text_width_with_fallback(
+                        " ", self.font_size
                     )
                     if (
                         current_line
@@ -278,11 +328,11 @@ class PDFFormatter:
                     y += line_height
                     continue
 
-                # Insert the line
-                page.insert_text(
+                # Insert the line with font fallback support
+                self.insert_text_with_fallback(
+                    page,
                     (start_x, y),
                     line,
-                    fontname=self.font,
                     fontsize=self.font_size,
                     color=(0, 0, 0),
                 )
@@ -337,20 +387,236 @@ class PDFFormatter:
                                 footer_text += f"\n{key}: {value}"
 
                 # Calculate position (right-aligned at bottom of page)
-                text_width = fitz.get_text_length(
-                    footer_text, fontname=self.font, fontsize=self.font_size - 2
+                text_width, _ = self.get_text_width_with_fallback(
+                    footer_text, self.font_size - 2
                 )
                 x = page.rect.width - self.margin - text_width
                 y = page.rect.height - self.margin
 
-                # Insert the text
-                page.insert_text(
+                # Insert the text with font fallback support
+                self.insert_text_with_fallback(
+                    page,
                     (x, y),
                     footer_text,
-                    fontname=self.font,
                     fontsize=self.font_size - 2,
                     color=(0, 0, 0),
                 )
 
         except Exception as e:
             logger.error(f"Error adding footer to PDF: {e}")
+
+    def get_text_width_with_fallback(
+        self, text: str, fontsize: int
+    ) -> Tuple[float, str]:
+        """
+        Calculate the width of text considering font fallbacks.
+
+        Args:
+            text: The text to measure
+            fontsize: The font size to use
+
+        Returns:
+            Tuple of (text_width, font_used)
+        """
+        if not text:
+            return 0.0, self.font
+
+        # Try to get from cache first
+        cache_key = f"{text}:{fontsize}"
+        if cache_key in self.font_cache:
+            return self.font_cache[cache_key]
+
+        # First try with the primary font
+        try:
+            width = fitz.get_text_length(text, fontname=self.font, fontsize=fontsize)
+            self.font_cache[cache_key] = (width, self.font)
+            return width, self.font
+        except Exception as e:
+            logger.debug(f"Primary font failed for text '{text}': {e}")
+
+        # If that fails, try to determine which characters need fallbacks
+        best_font = self.font
+        best_width = 0.0
+
+        # Try each fallback font
+        for fallback_font in self.font_fallbacks:
+            try:
+                width = fitz.get_text_length(
+                    text, fontname=fallback_font, fontsize=fontsize
+                )
+                # If we got a valid width, use this font
+                if width > 0:
+                    best_font = fallback_font
+                    best_width = width
+                    break
+            except Exception as e:
+                logger.debug(
+                    f"Fallback font {fallback_font} failed for text '{text}': {e}"
+                )
+                continue
+
+        # Cache the result
+        self.font_cache[cache_key] = (best_width, best_font)
+        return best_width, best_font
+
+    def get_font_for_character(self, char: str) -> str:
+        """
+        Determine the appropriate font for a character.
+
+        Args:
+            char: The character to check
+
+        Returns:
+            The font name to use for this character
+        """
+        if not char:
+            return self.font
+
+        # Get the Unicode code point
+        code_point = ord(char[0])
+
+        # Check which Unicode block this character belongs to
+        for block_name, (start, end) in UNICODE_BLOCKS.items():
+            if start <= code_point <= end:
+                # Use the block-to-font mapping if available
+                if block_name in BLOCK_TO_FONT_MAP:
+                    return BLOCK_TO_FONT_MAP[block_name]
+
+                # Special case for mathematical symbols not in our mapping
+                if (
+                    0x2100 <= code_point <= 0x2BFF
+                ):  # Range covering most mathematical symbols
+                    return "Symbol"
+
+                # Special case for Greek letters
+                if 0x0370 <= code_point <= 0x03FF:  # Greek and Coptic
+                    return "Symbol"
+
+                # Special case for Cyrillic
+                if block_name.startswith("Cyrillic"):
+                    # Try to find a font that supports Cyrillic
+                    for font in self.font_fallbacks:
+                        if font in [
+                            "Times-Roman",
+                            "Helvetica",
+                        ]:  # These might support some Cyrillic
+                            return font
+                    return self.font
+
+        # Default to the primary font
+        return self.font
+
+    def insert_text_with_fallback(
+        self,
+        page: fitz.Page,
+        pos: Tuple[float, float],
+        text: str,
+        fontsize: int,
+        color: Tuple[float, float, float] = (0, 0, 0),
+    ) -> None:
+        """
+        Insert text with font fallback support.
+
+        This method breaks down the text and uses appropriate fonts for different
+        character ranges to ensure all characters are displayed correctly.
+
+        Args:
+            page: The PDF page to write to
+            pos: The (x, y) position to insert the text
+            text: The text to insert
+            fontsize: The font size to use
+            color: The RGB color tuple to use
+        """
+        if not text:
+            return
+
+        # For simple cases, try using the primary font first
+        try:
+            page.insert_text(
+                pos,
+                text,
+                fontname=self.font,
+                fontsize=fontsize,
+                color=color,
+            )
+            return
+        except Exception as e:
+            # If there's an error, we'll need to use the fallback approach
+            logger.debug(f"Primary font insertion failed, using fallbacks: {e}")
+
+        # Split text into lines
+        lines = text.split("\n")
+        x, y = pos
+        line_height = fontsize * 1.2
+
+        for line_idx, line in enumerate(lines):
+            if not line:
+                y += line_height
+                continue
+
+            # Process the line character by character
+            current_font = self.font
+            current_text = ""
+            current_x = x
+
+            for char in line:
+                # Check if we need to switch fonts
+                char_font = self.get_font_for_character(char)
+
+                # If the font changes, output the accumulated text and reset
+                if char_font != current_font and current_text:
+                    try:
+                        page.insert_text(
+                            (current_x, y),
+                            current_text,
+                            fontname=current_font,
+                            fontsize=fontsize,
+                            color=color,
+                        )
+                        # Update x position
+                        current_x += fitz.get_text_length(
+                            current_text, fontname=current_font, fontsize=fontsize
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to insert text with font {current_font}: {e}"
+                        )
+
+                    # Reset for the new font
+                    current_text = ""
+                    current_font = char_font
+
+                # Add the character to the current text segment
+                current_text += char
+
+            # Output any remaining text
+            if current_text:
+                try:
+                    page.insert_text(
+                        (current_x, y),
+                        current_text,
+                        fontname=current_font,
+                        fontsize=fontsize,
+                        color=color,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to insert text with font {current_font}: {e}"
+                    )
+
+                    # Last resort: try each fallback font
+                    for fallback in self.font_fallbacks:
+                        try:
+                            page.insert_text(
+                                (current_x, y),
+                                current_text,
+                                fontname=fallback,
+                                fontsize=fontsize,
+                                color=color,
+                            )
+                            break
+                        except Exception:
+                            continue
+
+            # Move to the next line
+            y += line_height

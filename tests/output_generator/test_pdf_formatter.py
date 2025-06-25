@@ -6,7 +6,10 @@ from pathlib import Path
 import fitz  # PyMuPDF
 import pytest
 
-from stmt_obfuscator.output_generator.pdf_formatter import PDFFormatter
+from stmt_obfuscator.output_generator.pdf_formatter import (
+    DEFAULT_FONT_FALLBACKS,
+    PDFFormatter,
+)
 
 
 @pytest.fixture
@@ -138,6 +141,7 @@ def test_custom_formatting_options():
         margin=36,
         include_timestamp=False,
         include_metadata=False,
+        font_fallbacks=["Helvetica", "Courier"],
     )
 
     # Check that the options were set correctly
@@ -146,6 +150,7 @@ def test_custom_formatting_options():
     assert formatter.margin == 36
     assert formatter.include_timestamp is False
     assert formatter.include_metadata is False
+    assert formatter.font_fallbacks == ["Helvetica", "Courier"]
 
 
 def test_wrap_text():
@@ -198,3 +203,122 @@ def test_wrap_text():
                 found = True
                 break
         assert found, f"Long word not properly handled: {word}"
+
+
+def test_font_fallback_initialization():
+    """Test font fallback initialization."""
+    # Test with default fallbacks
+    formatter = PDFFormatter()
+    assert formatter.font_fallbacks == [
+        f for f in DEFAULT_FONT_FALLBACKS if f != formatter.font
+    ]
+
+    # Test with custom fallbacks
+    custom_fallbacks = ["Courier", "Times-Roman"]
+    formatter = PDFFormatter(font="Helvetica", font_fallbacks=custom_fallbacks)
+    assert formatter.font_fallbacks == custom_fallbacks
+
+    # Test with primary font in fallbacks (should be removed)
+    formatter = PDFFormatter(
+        font="Helvetica", font_fallbacks=["Courier", "Helvetica", "Times-Roman"]
+    )
+    assert "Helvetica" not in formatter.font_fallbacks
+    assert len(formatter.font_fallbacks) == 2
+
+
+def test_get_font_for_character():
+    """Test font selection for different character types."""
+    formatter = PDFFormatter()
+
+    # Test basic Latin characters
+    assert formatter.get_font_for_character("A") == formatter.font
+    assert formatter.get_font_for_character("z") == formatter.font
+
+    # Test symbols
+    assert (
+        formatter.get_font_for_character("Ω") in ["Symbol"] + formatter.font_fallbacks
+    )
+    assert (
+        formatter.get_font_for_character("∑") in ["Symbol"] + formatter.font_fallbacks
+    )
+
+    # Test empty string
+    assert formatter.get_font_for_character("") == formatter.font
+
+
+def test_get_text_width_with_fallback():
+    """Test text width calculation with fallbacks."""
+    formatter = PDFFormatter()
+
+    # Test simple text
+    width, font = formatter.get_text_width_with_fallback("Hello", 12)
+    assert width > 0
+    assert font == formatter.font
+
+    # Test empty string
+    width, font = formatter.get_text_width_with_fallback("", 12)
+    assert width == 0
+    assert font == formatter.font
+
+    # Test caching
+    formatter.font_cache = {}  # Clear cache
+    width1, font1 = formatter.get_text_width_with_fallback("Test", 12)
+    assert "Test:12" in formatter.font_cache
+    width2, font2 = formatter.get_text_width_with_fallback("Test", 12)
+    assert width1 == width2
+    assert font1 == font2
+
+
+def test_insert_text_with_fallback():
+    """Test inserting text with font fallbacks."""
+    formatter = PDFFormatter()
+
+    # Create a new PDF document
+    pdf_doc = fitz.open()
+    pdf_doc.new_page()
+    page = pdf_doc[0]
+
+    # Test with simple text
+    formatter.insert_text_with_fallback(page, (72, 72), "Simple text", 12)
+
+    # Test with mixed text containing special characters
+    mixed_text = "Regular text with special characters: Ω, π, ∑"
+    formatter.insert_text_with_fallback(page, (72, 100), mixed_text, 12)
+
+    # Test with multiline text
+    multiline_text = "Line 1\nLine 2 with Ω\nLine 3"
+    formatter.insert_text_with_fallback(page, (72, 150), multiline_text, 12)
+
+    # Save the PDF to a temporary file for inspection
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_path = Path(temp_dir) / "test_fallback.pdf"
+        pdf_doc.save(output_path)
+
+        # Check that the file exists
+        assert output_path.exists()
+
+
+def test_document_with_special_characters(sample_document):
+    """Test formatting a document with special characters."""
+    # Modify the sample document to include special characters
+    sample_document["full_text"] += "\nSpecial characters: Ω, π, ∑, €, ¥, £"
+
+    formatter = PDFFormatter()
+
+    # Create a new PDF document
+    pdf_doc = fitz.open()
+
+    # Format the document
+    result = formatter.format_document(sample_document, pdf_doc)
+
+    # Check that the document was formatted successfully
+    assert result is not None
+    assert len(result) > 0
+
+    # Save the PDF to a temporary file for inspection
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_path = Path(temp_dir) / "test_special_chars.pdf"
+        result.save(output_path)
+
+        # Check that the file exists
+        assert output_path.exists()

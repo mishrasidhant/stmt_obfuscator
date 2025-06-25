@@ -6,8 +6,7 @@ This module contains configuration settings for the application.
 
 import os
 from pathlib import Path
-from typing import Dict, Any
-
+from typing import Any, Dict
 
 # Application paths
 APP_DIR = Path.home() / ".stmt_obfuscator"
@@ -40,6 +39,7 @@ PDF_FONT_SIZE = 11
 PDF_MARGIN = 72  # 1 inch in points
 PDF_INCLUDE_TIMESTAMP = True
 PDF_INCLUDE_METADATA = True
+PDF_FONT_FALLBACKS = ["Times-Roman", "Courier", "Symbol", "ZapfDingbats"]
 
 # UI configuration
 UI_THEME = "light"  # "light" or "dark"
@@ -69,6 +69,7 @@ def get_default_config() -> Dict[str, Any]:
             "margin": PDF_MARGIN,
             "include_timestamp": PDF_INCLUDE_TIMESTAMP,
             "include_metadata": PDF_INCLUDE_METADATA,
+            "font_fallbacks": PDF_FONT_FALLBACKS,
         },
         "ui": {
             "theme": UI_THEME,
