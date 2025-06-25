@@ -204,9 +204,10 @@ After running the main application command, the graphical user interface (GUI) w
    - The application will show the original document and the obfuscated version side by side
    - Note: There might be UI issues when highlighting PII entities in the preview
 
-5. **Save the Obfuscated PDF**:
-   - Click the "Save Obfuscated PDF" button
-   - Choose a location to save the obfuscated document
+5. **Save the Obfuscated Text**:
+   - Click the "Save Obfuscated Text" button
+   - Choose a location to save the obfuscated document as a text file
+   - Note: Currently, the application saves the obfuscated content as a text file. PDF generation will be implemented in a future version.
 
 ## Using the RAG Features
 

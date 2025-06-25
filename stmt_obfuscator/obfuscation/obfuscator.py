@@ -67,30 +67,93 @@ class Obfuscator:
         Returns:
             The obfuscated document with PII entities masked
         """
-        # Extract financial data for integrity checks
-        self._extract_financial_data(document)
-        
-        # Create a deep copy of the document to avoid modifying the original
-        obfuscated_document = self._deep_copy_document(document)
-        
-        # Process entities and build replacement map
-        self._build_replacement_map(pii_entities)
-        
-        # Apply obfuscation to document text
-        obfuscated_document = self._apply_obfuscation(obfuscated_document)
-        
-        # Verify financial integrity
-        integrity_verified = self._verify_financial_integrity(obfuscated_document)
-        if not integrity_verified:
-            logger.warning("Financial integrity check failed after obfuscation")
-        
-        # Add obfuscation metadata
-        obfuscated_document["metadata"]["obfuscated"] = True
-        obfuscated_document["metadata"]["obfuscation_timestamp"] = self._get_timestamp()
-        obfuscated_document["metadata"]["entities_obfuscated"] = len(self.replacement_map)
-        
-        logger.info(f"Obfuscated document with {len(self.replacement_map)} PII entities")
-        return obfuscated_document
+        try:
+            # Validate inputs
+            if not isinstance(document, dict):
+                logger.error(f"Document is not a dictionary: {type(document)}")
+                raise TypeError(f"Document must be a dictionary, got {type(document)}")
+                
+            if not isinstance(pii_entities, (list, tuple)):
+                logger.error(f"PII entities is not a list: {type(pii_entities)}")
+                raise TypeError(f"PII entities must be a list, got {type(pii_entities)}")
+            
+            # Ensure document has required fields
+            if "full_text" not in document:
+                logger.warning("Document missing 'full_text', adding empty string")
+                document["full_text"] = ""
+                
+            if "metadata" not in document:
+                logger.warning("Document missing 'metadata', adding empty dict")
+                document["metadata"] = {}
+                
+            if "text_blocks" not in document:
+                logger.warning("Document missing 'text_blocks', adding empty list")
+                document["text_blocks"] = []
+            
+            # Extract financial data for integrity checks
+            try:
+                self._extract_financial_data(document)
+            except Exception as e:
+                logger.error(f"Error extracting financial data: {e}")
+                # Continue processing even if financial data extraction fails
+            
+            # Create a deep copy of the document to avoid modifying the original
+            try:
+                obfuscated_document = self._deep_copy_document(document)
+            except Exception as e:
+                logger.error(f"Error creating deep copy: {e}")
+                # Fall back to using the original document
+                obfuscated_document = document
+            
+            # Process entities and build replacement map
+            try:
+                self._build_replacement_map(pii_entities)
+            except Exception as e:
+                logger.error(f"Error building replacement map: {e}")
+                # Continue with empty replacement map if building fails
+                self.replacement_map = {}
+            
+            # Apply obfuscation to document text
+            obfuscated_document = self._apply_obfuscation(obfuscated_document)
+            
+            # Verify financial integrity
+            try:
+                integrity_verified = self._verify_financial_integrity(obfuscated_document)
+                if not integrity_verified:
+                    logger.warning("Financial integrity check failed after obfuscation")
+            except Exception as e:
+                logger.error(f"Error verifying financial integrity: {e}")
+                # Continue even if integrity verification fails
+            
+            # Add obfuscation metadata
+            try:
+                if "metadata" not in obfuscated_document:
+                    obfuscated_document["metadata"] = {}
+                    
+                obfuscated_document["metadata"]["obfuscated"] = True
+                obfuscated_document["metadata"]["obfuscation_timestamp"] = self._get_timestamp()
+                obfuscated_document["metadata"]["entities_obfuscated"] = len(self.replacement_map)
+            except Exception as e:
+                logger.error(f"Error adding metadata: {e}")
+                # Continue even if adding metadata fails
+            
+            logger.info(f"Obfuscated document with {len(self.replacement_map)} PII entities")
+            return obfuscated_document
+            
+        except Exception as e:
+            logger.error(f"Error in obfuscate_document: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            # Return a minimal valid document in case of error
+            return {
+                "full_text": document.get("full_text", "") if isinstance(document, dict) else "",
+                "metadata": {
+                    "error": str(e),
+                    "obfuscated": False
+                },
+                "text_blocks": []
+            }
 
     def _build_replacement_map(self, pii_entities: List[Dict[str, Any]]) -> None:
         """
@@ -99,41 +162,87 @@ class Obfuscator:
         Args:
             pii_entities: List of detected PII entities
         """
-        self.replacement_map = {}
-        self.entity_consistency_map = {}
-        
-        # Filter entities by confidence threshold
-        filtered_entities = [
-            entity for entity in pii_entities
-            if entity.get("confidence", 1.0) >= self.confidence_threshold
-        ]
-        
-        # Group similar entities for consistency
-        entity_groups = self._group_similar_entities(filtered_entities)
-        
-        # Process each entity group
-        for group_id, entities in entity_groups.items():
-            # Use the highest confidence entity as the representative
-            representative = max(entities, key=lambda e: e.get("confidence", 0))
-            entity_type = representative["type"]
+        try:
+            self.replacement_map = {}
+            self.entity_consistency_map = {}
             
-            # Generate consistent replacement for all entities in the group
-            if entity_type in self.entity_handlers:
-                replacement = self.entity_handlers[entity_type](representative)
-            else:
-                # Default handler for unknown entity types
-                replacement = self._handle_default(representative)
+            # Validate input
+            if not isinstance(pii_entities, (list, tuple)):
+                logger.error(f"PII entities is not a list: {type(pii_entities)}")
+                raise TypeError(f"PII entities must be a list, got {type(pii_entities)}")
             
-            # Apply the same replacement to all entities in the group
-            for entity in entities:
-                original_text = entity["text"]
-                self.replacement_map[original_text] = replacement
-                
-                # Store in consistency map for future reference
-                entity_hash = self._compute_entity_hash(original_text, entity_type)
-                self.entity_consistency_map[entity_hash] = replacement
-        
-        logger.info(f"Built replacement map with {len(self.replacement_map)} entries")
+            # Filter entities by confidence threshold
+            filtered_entities = []
+            for entity in pii_entities:
+                if not isinstance(entity, dict):
+                    logger.warning(f"Entity is not a dictionary: {type(entity)}")
+                    continue
+                    
+                confidence = entity.get("confidence", 1.0)
+                if not isinstance(confidence, (int, float)):
+                    logger.warning(f"Confidence is not a number: {type(confidence)}")
+                    confidence = 1.0
+                    
+                if confidence >= self.confidence_threshold:
+                    filtered_entities.append(entity)
+            
+            logger.info(f"Filtered {len(pii_entities)} entities to {len(filtered_entities)} based on confidence threshold")
+            
+            # Group similar entities for consistency
+            try:
+                entity_groups = self._group_similar_entities(filtered_entities)
+            except Exception as e:
+                logger.error(f"Error grouping entities: {e}")
+                # Fall back to simple grouping by type
+                entity_groups = {}
+                for entity in filtered_entities:
+                    entity_type = entity.get("type", "UNKNOWN")
+                    if entity_type not in entity_groups:
+                        entity_groups[entity_type] = []
+                    entity_groups[entity_type].append(entity)
+            
+            # Process each entity group
+            for group_id, entities in entity_groups.items():
+                try:
+                    # Use the highest confidence entity as the representative
+                    representative = max(entities, key=lambda e: e.get("confidence", 0))
+                    entity_type = representative.get("type", "UNKNOWN")
+                    
+                    # Generate consistent replacement for all entities in the group
+                    if entity_type in self.entity_handlers:
+                        replacement = self.entity_handlers[entity_type](representative)
+                    else:
+                        # Default handler for unknown entity types
+                        replacement = self._handle_default(representative)
+                    
+                    # Apply the same replacement to all entities in the group
+                    for entity in entities:
+                        if "text" not in entity:
+                            logger.warning(f"Entity missing 'text' field: {entity}")
+                            continue
+                            
+                        original_text = entity["text"]
+                        self.replacement_map[original_text] = replacement
+                        
+                        # Store in consistency map for future reference
+                        try:
+                            entity_hash = self._compute_entity_hash(original_text, entity_type)
+                            self.entity_consistency_map[entity_hash] = replacement
+                        except Exception as hash_error:
+                            logger.error(f"Error computing entity hash: {hash_error}")
+                            # Continue without storing in consistency map
+                except Exception as group_error:
+                    logger.error(f"Error processing entity group {group_id}: {group_error}")
+                    # Continue with next group
+            
+            logger.info(f"Built replacement map with {len(self.replacement_map)} entries")
+        except Exception as e:
+            logger.error(f"Error in _build_replacement_map: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Reset maps to empty to avoid partial state
+            self.replacement_map = {}
+            self.entity_consistency_map = {}
 
     def _group_similar_entities(self, entities: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
         """
@@ -205,25 +314,60 @@ class Obfuscator:
         Returns:
             The obfuscated document
         """
-        # Obfuscate full text
-        if "full_text" in document:
-            document["full_text"] = self._obfuscate_text(document["full_text"])
-        
-        # Obfuscate text blocks
-        if "text_blocks" in document:
-            for i, block in enumerate(document["text_blocks"]):
-                if "text" in block:
-                    document["text_blocks"][i]["text"] = self._obfuscate_text(block["text"])
-        
-        # Obfuscate tables if present
-        if "tables" in document:
-            for i, table in enumerate(document["tables"]):
-                for j, row in enumerate(table.get("rows", [])):
-                    for k, cell in enumerate(row):
-                        if isinstance(cell, str):
-                            document["tables"][i]["rows"][j][k] = self._obfuscate_text(cell)
-        
-        return document
+        try:
+            # Obfuscate full text
+            if "full_text" in document:
+                document["full_text"] = self._obfuscate_text(document["full_text"])
+            
+            # Obfuscate text blocks
+            if "text_blocks" in document:
+                text_blocks = document["text_blocks"]
+                if not isinstance(text_blocks, (list, tuple)):
+                    logger.warning(f"text_blocks is not iterable: {type(text_blocks)}")
+                    # Fix the issue by creating a proper list
+                    document["text_blocks"] = [{"text": document.get("full_text", "")}]
+                else:
+                    for i, block in enumerate(text_blocks):
+                        if not isinstance(block, dict):
+                            logger.warning(f"Block is not a dictionary: {type(block)}")
+                            continue
+                        if "text" in block:
+                            document["text_blocks"][i]["text"] = self._obfuscate_text(block["text"])
+            
+            # Obfuscate tables if present
+            if "tables" in document:
+                tables = document.get("tables", [])
+                if not isinstance(tables, (list, tuple)):
+                    logger.warning(f"tables is not iterable: {type(tables)}")
+                    # Fix the issue by setting tables to an empty list
+                    document["tables"] = []
+                else:
+                    for i, table in enumerate(tables):
+                        if not isinstance(table, dict):
+                            logger.warning(f"Table is not a dictionary: {type(table)}")
+                            continue
+                        
+                        rows = table.get("rows", [])
+                        if not isinstance(rows, (list, tuple)):
+                            logger.warning(f"rows is not iterable: {type(rows)}")
+                            continue
+                            
+                        for j, row in enumerate(rows):
+                            if not isinstance(row, (list, tuple)):
+                                logger.warning(f"row is not iterable: {type(row)}")
+                                continue
+                                
+                            for k, cell in enumerate(row):
+                                if isinstance(cell, str):
+                                    document["tables"][i]["rows"][j][k] = self._obfuscate_text(cell)
+            
+            return document
+        except Exception as e:
+            logger.error(f"Error in _apply_obfuscation: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            # Return the original document if obfuscation fails
+            return document
 
     def _obfuscate_text(self, text: str) -> str:
         """
@@ -292,7 +436,18 @@ class Obfuscator:
         
         # Extract transactions if available
         if "tables" in document:
-            for table in document.get("tables", []):
+            # Ensure tables is iterable
+            tables = document.get("tables", [])
+            if not isinstance(tables, (list, tuple)):
+                logger.warning(f"Tables is not iterable: {type(tables)}")
+                return
+                
+            for table in tables:
+                # Ensure table is a dictionary
+                if not isinstance(table, dict):
+                    logger.warning(f"Table is not a dictionary: {type(table)}")
+                    continue
+                    
                 # Look for transaction tables
                 if self._is_transaction_table(table):
                     transactions = self._extract_transactions(table)

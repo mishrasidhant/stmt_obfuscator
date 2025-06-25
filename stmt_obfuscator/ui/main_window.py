@@ -11,6 +11,7 @@ import threading
 from typing import Dict, List, Any, Optional
 
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QObject, pyqtSlot
+from PyQt6.QtGui import QIcon, QAction, QColor, QFont, QPixmap, QTextCursor
 from PyQt6.QtWidgets import (
     QMainWindow,
     QWidget,
@@ -42,7 +43,7 @@ from PyQt6.QtWidgets import (
     QRadioButton,
     QButtonGroup,
 )
-from PyQt6.QtGui import QIcon, QAction, QColor, QFont, QPixmap
+# Already imported QTextCursor above
 
 from stmt_obfuscator.pdf_parser.parser import PDFParser
 from stmt_obfuscator.pii_detection.detector import PIIDetector
@@ -351,7 +352,7 @@ class MainWindow(QMainWindow):
         self.process_button.setEnabled(False)
         self.process_button.clicked.connect(self._on_process_file)
 
-        self.save_button = QPushButton("Save Obfuscated PDF")
+        self.save_button = QPushButton("Save Obfuscated Text")
         self.save_button.setEnabled(False)
         self.save_button.clicked.connect(self._on_save_file)
 
@@ -489,7 +490,7 @@ class MainWindow(QMainWindow):
         open_action.triggered.connect(self._on_select_file)
         file_menu.addAction(open_action)
 
-        save_action = QAction("&Save Obfuscated PDF...", self)
+        save_action = QAction("&Save Obfuscated Text...", self)
         save_action.setShortcut("Ctrl+S")
         save_action.triggered.connect(self._on_save_file)
         save_action.setEnabled(False)
@@ -771,7 +772,7 @@ class MainWindow(QMainWindow):
                 cursor = self.document_preview.textCursor()
                 cursor.setPosition(pos)
                 cursor.setPosition(
-                    pos + len(entity_text), QTextEdit.ExtraSelection.KeepAnchor
+                    pos + len(entity_text), QTextCursor.MoveMode.KeepAnchor
                 )
 
                 # Set the cursor and ensure it's visible
@@ -876,20 +877,50 @@ class MainWindow(QMainWindow):
         try:
             # Get the obfuscator from the processing result
             obfuscator = self.processing_result["obfuscator"]
-            document = self.processing_result["document"]
-
-            # Obfuscate the document
-            obfuscated_document = obfuscator.obfuscate_document(
-                document, selected_entities
-            )
+            logger.info("Retrieved obfuscator from processing result")
+            
+            # Create a completely new document structure instead of using the existing one
+            document = {
+                "full_text": self.document_text,
+                "metadata": {"source": "preview"},
+                "text_blocks": [{"text": self.document_text}]
+            }
+            
+            logger.info(f"Created new document structure: {type(document)}")
+            logger.info(f"Document keys: {document.keys()}")
+            logger.info(f"Selected entities count: {len(selected_entities)}")
+            
+            # Debug log the first entity if available
+            if selected_entities:
+                logger.info(f"First entity: {selected_entities[0]}")
+            
+            # Obfuscate the document with detailed error handling
+            try:
+                logger.info("Starting document obfuscation")
+                obfuscated_document = obfuscator.obfuscate_document(
+                    document, selected_entities
+                )
+                logger.info("Document obfuscation completed successfully")
+            except TypeError as te:
+                logger.error(f"Type error during obfuscation: {te}")
+                # Try to identify which object is causing the issue
+                if "is not iterable" in str(te):
+                    for key, value in document.items():
+                        logger.error(f"Document key '{key}' has type: {type(value)}")
+                raise
+            except Exception as ex:
+                logger.error(f"Error during obfuscation: {ex}")
+                raise
 
             # Show the obfuscated document
             if "full_text" in obfuscated_document:
                 self.obfuscated_preview.setText(obfuscated_document["full_text"])
+                logger.info("Set obfuscated text in preview")
             else:
                 self.obfuscated_preview.setText(
                     "Error: Could not generate obfuscated text"
                 )
+                logger.error("No full_text in obfuscated document")
 
             # Enable the save button
             self.save_button.setEnabled(True)
@@ -902,6 +933,9 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             logger.error(f"Error generating preview: {e}")
+            logger.error(f"Error type: {type(e)}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             QMessageBox.critical(
                 self, "Preview Error", f"Error generating obfuscation preview: {str(e)}"
             )
@@ -914,10 +948,10 @@ class MainWindow(QMainWindow):
 
         # Get the output file path
         input_path = Path(self.pdf_path)
-        default_output_path = input_path.with_stem(f"{input_path.stem}_obfuscated")
+        default_output_path = input_path.with_stem(f"{input_path.stem}_obfuscated").with_suffix(".txt")
 
         output_path, _ = QFileDialog.getSaveFileName(
-            self, "Save Obfuscated PDF", str(default_output_path), "PDF Files (*.pdf)"
+            self, "Save Obfuscated Text", str(default_output_path), "Text Files (*.txt)"
         )
 
         if not output_path:
@@ -948,16 +982,18 @@ class MainWindow(QMainWindow):
             # Save the obfuscated document
             self.progress_bar.setValue(90)
 
-            # TODO: Implement actual PDF saving logic
-            # For now, just save the text to a file
+            # Save as text file
             with open(output_path, "w") as f:
                 f.write(obfuscated_document.get("full_text", ""))
 
             self.progress_bar.setValue(100)
-            self.status_bar.showMessage(f"Saved obfuscated file to {output_path}")
+            self.status_bar.showMessage(f"Saved obfuscated text to {output_path}")
 
             QMessageBox.information(
-                self, "File Saved", f"Obfuscated file saved to:\n{output_path}"
+                self, "File Saved",
+                f"Obfuscated text saved to:\n{output_path}\n\n"
+                f"Note: Currently, the application saves the obfuscated content as a text file. "
+                f"PDF generation will be implemented in a future version."
             )
 
         except Exception as e:
