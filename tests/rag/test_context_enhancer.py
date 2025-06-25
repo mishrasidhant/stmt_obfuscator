@@ -44,6 +44,8 @@ class TestRAGContextEnhancer:
         with patch('chromadb.PersistentClient', return_value=mock_client):
             enhancer = RAGContextEnhancer(collection_name="test_collection")
             enhancer.collection = mock_collection
+            # We don't want to mock add_pattern completely as it would break the tests
+            # that check its behavior
             yield enhancer
 
     def test_init(self):
@@ -189,21 +191,28 @@ class TestRAGContextEnhancer:
         """Test initialize_knowledge_base when already initialized."""
         mock_rag_enhancer.collection.count.return_value = 10
         
-        result = mock_rag_enhancer.initialize_knowledge_base()
-        
-        assert result is True
-        mock_rag_enhancer.add_pattern.assert_not_called()
+        # Spy on the add_pattern method to check if it's called
+        with patch.object(mock_rag_enhancer, 'add_pattern', wraps=mock_rag_enhancer.add_pattern) as spy:
+            result = mock_rag_enhancer.initialize_knowledge_base()
+            
+            assert result is True
+            # Verify add_pattern was not called
+            assert spy.call_count == 0
 
     def test_initialize_knowledge_base_success(self, mock_rag_enhancer):
         """Test initialize_knowledge_base success."""
         mock_rag_enhancer.collection.count.return_value = 0
-        mock_rag_enhancer.add_pattern.return_value = True
         
-        result = mock_rag_enhancer.initialize_knowledge_base()
-        
-        assert result is True
-        # There are 9 patterns in the default initialization
-        assert mock_rag_enhancer.add_pattern.call_count == 9
+        # Spy on the add_pattern method to check if it's called
+        with patch.object(mock_rag_enhancer, 'add_pattern', wraps=mock_rag_enhancer.add_pattern) as spy:
+            # Make the spy return True
+            spy.return_value = True
+            
+            result = mock_rag_enhancer.initialize_knowledge_base()
+            
+            assert result is True
+            # There are 9 patterns in the default initialization
+            assert spy.call_count == 9
 
     def test_initialize_knowledge_base_exception(self, mock_rag_enhancer):
         """Test initialize_knowledge_base with exception."""

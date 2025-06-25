@@ -151,5 +151,7 @@ class TestRAGWithGeneratedData:
             assert context is not None
             assert "patterns" in context
             
-            # Cleanup
-            enhancer.collection.delete()
+            # Cleanup - get all IDs and then delete them
+            all_ids = enhancer.collection.get()["ids"]
+            if all_ids:
+                enhancer.collection.delete(ids=all_ids)

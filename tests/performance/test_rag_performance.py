@@ -168,8 +168,11 @@ class TestRAGPerformance:
         
         # Test each volume level
         for volume in volume_levels:
-            # Reset the collection
-            rag_enhancer.collection.delete()
+            # Reset the collection - get all IDs and then delete them
+            all_ids = rag_enhancer.collection.get()["ids"]
+            if all_ids:
+                rag_enhancer.collection.delete(ids=all_ids)
+            # Alternatively, we could delete and recreate the collection
             rag_enhancer.collection = rag_enhancer.client.get_or_create_collection(
                 name=rag_enhancer.collection_name,
                 metadata={"description": "PII patterns for bank statements"}
