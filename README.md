@@ -10,6 +10,20 @@ A privacy-focused desktop application designed to process bank statements while 
 - **Hardware Optimized**: Designed for Apple Silicon (M-series chips)
 - **Configurable Architecture**: Supports model swapping for future enhancements
 
+## Project Status
+
+This project is under active development. The following components have been implemented:
+
+- ✅ Project setup and environment configuration
+- ✅ PDF parsing module with layout preservation
+- ✅ Enhanced PII detection module design
+- ✅ RAG module design for ambiguous cases
+- ✅ Obfuscation module with pattern-preserving masking
+- 🔄 User interface with PII review capabilities (in progress)
+- 🔄 Comprehensive testing framework (in progress)
+
+For detailed documentation on completed subtasks, see the [subtask documentation](docs/subtasks/README.md).
+
 ## Project Structure
 
 ```
@@ -22,6 +36,12 @@ stmt_obfuscator/
 ├── obfuscation/         # PDF obfuscation
 └── output_generator/    # Output generation
 ```
+
+## Documentation
+
+- [Subtask Documentation](docs/subtasks/README.md) - Detailed documentation for all completed subtasks
+- [Setup Guide](docs/setup_guide.md) - Detailed setup instructions
+- [Troubleshooting](docs/troubleshooting.md) - Solutions to common issues
 
 ## Development Setup
 
