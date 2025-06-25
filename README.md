@@ -40,6 +40,8 @@ stmt_obfuscator/
 ## Documentation
 
 - [User Guide](docs/user_guide.md) - Comprehensive guide for installing and using the application
+- [Project Status](docs/project_status.md) - Current status of all project components
+- [RAG Implementation](docs/rag_implementation.md) - Details on the RAG context enhancement module
 - [Subtask Documentation](docs/subtasks/README.md) - Detailed documentation for all completed subtasks
 - [Setup Guide](docs/setup_guide.md) - Detailed setup instructions
 - [Troubleshooting](docs/troubleshooting.md) - Solutions to common issues

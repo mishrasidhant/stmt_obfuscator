@@ -1271,8 +1271,10 @@ class PDFParser:
                     # If adding this block would exceed the chunk size, start a new chunk
                     current_text_len = len(current_chunk["text"])
                     block_text_len = len(block["text"])
-                    if (current_text_len + block_text_len > max_chunk_size and
-                        current_chunk["text"]):
+                    if (
+                        current_text_len + block_text_len > max_chunk_size
+                        and current_chunk["text"]
+                    ):
                         chunks.append(current_chunk)
                         current_chunk = {
                             "text": "",

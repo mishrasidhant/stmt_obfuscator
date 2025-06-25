@@ -1,0 +1,102 @@
+{
+  "entities": [
+    {
+      "type": "ORGANIZATION_NAME",
+      "text": "PNC Bank",
+      "start": 0,
+      "end": 8,
+      "confidence": 1.0
+    },
+    {
+      "type": "ADDRESS",
+      "text": "123 Main Street, Pittsburgh, PA 15222",
+      "start": 9,
+      "end": 46,
+      "confidence": 1.0
+    },
+    {
+      "type": "PHONE_NUMBER",
+      "text": "(800) 555-1212",
+      "start": 54,
+      "end": 68,
+      "confidence": 1.0
+    },
+    {
+      "type": "WEBSITE",
+      "text": "www.pnc.com",
+      "start": 78,
+      "end": 89,
+      "confidence": 1.0
+    },
+    {
+      "type": "PERSON_NAME",
+      "text": "John Doe",
+      "start": 143,
+      "end": 151,
+      "confidence": 1.0
+    },
+    {
+      "type": "ADDRESS",
+      "text": "456 Oak Avenue, Apt 789, Anytown, CA 90210",
+      "start": 152,
+      "end": 195,
+      "confidence": 1.0
+    },
+    {
+      "type": "PHONE_NUMBER",
+      "text": "(555) 123-4567",
+      "start": 203,
+      "end": 217,
+      "confidence": 1.0
+    },
+    {
+      "type": "EMAIL",
+      "text": "john.doe@example.com",
+      "start": 225,
+      "end": 245,
+      "confidence": 1.0
+    },
+    {
+      "type": "ACCOUNT_NUMBER",
+      "text": "1234",
+      "start": 282,
+      "end": 286,
+      "confidence": 1.0
+    },
+    {
+      "type": "ROUTING_NUMBER",
+      "text": "123456789",
+      "start": 305,
+      "end": 314,
+      "confidence": 1.0
+    },
+    {
+      "type": "PERSON_NAME",
+      "text": "JANE DOE",
+      "start": 587,
+      "end": 595,
+      "confidence": 1.0
+    },
+    {
+      "type": "PHONE_NUMBER",
+      "text": "(800) 555-1212",
+      "start": 1007,
+      "end": 1021,
+      "confidence": 1.0
+    },
+    {
+      "type": "EMAIL",
+      "text": "customer.service@pnc.com",
+      "start": 1029,
+      "end": 1054,
+      "confidence": 1.0
+    },
+    {
+      "type": "ORGANIZATION_NAME",
+      "text": "PNC Bank",
+      "start": 1078,
+      "end": 1086,
+      "confidence": 1.0
+    }
+  ]
+}

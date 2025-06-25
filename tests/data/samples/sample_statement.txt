@@ -1,0 +1,41 @@
+PNC Bank
+123 Main Street, Pittsburgh, PA 15222
+Phone: (800) 555-1212
+Website: www.pnc.com
+
+ACCOUNT STATEMENT
+
+Statement Period: 01/01/2025 - 01/31/2025
+
+CUSTOMER INFORMATION:
+John Doe
+456 Oak Avenue, Apt 789, Anytown, CA 90210
+Phone: (555) 123-4567
+Email: john.doe@example.com
+
+ACCOUNT SUMMARY:
+Account Number: XXXX-XXXX-XXXX-1234
+Routing Number: 123456789
+Beginning Balance: $1,234.56
+Ending Balance: $2,345.67
+
+TRANSACTION HISTORY:
+Date       Description                                Amount      Balance
+----------------------------------------------------------------------------------
+01/01/2025 BEGINNING BALANCE                          $0.00       $1,234.56
+01/03/2025 DEPOSIT - DIRECT DEPOSIT                   $1,000.00   $2,234.56
+01/05/2025 PURCHASE - AMAZON                          $-45.67     $2,188.89
+01/07/2025 PURCHASE - WALMART                         $-78.90     $2,109.99
+01/10/2025 TRANSFER TO JANE DOE                       $-100.00    $2,009.99
+01/15/2025 WITHDRAWAL - ATM                           $-200.00    $1,809.99
+01/20/2025 PURCHASE - STARBUCKS                       $-4.32      $1,805.67
+01/25/2025 PAYMENT - CREDIT CARD                      $-500.00    $1,305.67
+01/28/2025 DEPOSIT - CHECK                            $1,040.00   $2,345.67
+01/31/2025 ENDING BALANCE                             $0.00       $2,345.67
+----------------------------------------------------------------------------------
+
+For questions about your account, please contact us at:
+Phone: (800) 555-1212
+Email: customer.service@pnc.com
+
+Thank you for banking with PNC Bank!

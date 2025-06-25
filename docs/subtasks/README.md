@@ -24,6 +24,7 @@ This directory contains documentation for all completed subtasks in the PDF Bank
    - Created bank-specific pattern prioritization
    - Incorporated document context
    - Implemented ChromaDB integration
+   - See also: [RAG Implementation](../rag_implementation.md) for current status
 
 5. [Obfuscation Module Implementation](05-obfuscation-module.md)
    - Implemented pattern-preserving masking
@@ -54,7 +55,9 @@ This directory contains documentation for all completed subtasks in the PDF Bank
 
 ## Next Steps
 
-The project has completed all planned subtasks. Future enhancements may include:
+The project has completed all planned subtasks. For a comprehensive overview of the current project status and future plans, see the [Project Status](../project_status.md) document.
+
+Future enhancements may include:
 
 1. Advanced Features
    - Batch processing capabilities
