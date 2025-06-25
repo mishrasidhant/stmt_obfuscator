@@ -1,7 +1,11 @@
 """
 PII Detection module for the PDF Bank Statement Obfuscator.
 
-This module handles PII detection using Ollama with local LLMs.
+This module handles the detection of personally identifiable information (PII)
+in bank statement text using local LLMs via Ollama. It provides functionality
+to identify various types of PII such as names, addresses, account numbers,
+phone numbers, and other sensitive information that should be obfuscated
+before sharing bank statements.
 """
 
 import json
@@ -19,15 +23,28 @@ logger = logging.getLogger(__name__)
 
 
 class PIIDetector:
-    """PII Detector for identifying personally identifiable information in text."""
+    """PII Detector for identifying personally identifiable information in text.
+    
+    This class uses a local LLM through Ollama to identify personally identifiable
+    information in bank statement text. It can be enhanced with RAG context for
+    improved detection accuracy in ambiguous cases.
+    
+    Attributes:
+        model (str): The name of the Ollama model to use.
+        host (str): The URL of the Ollama API host.
+        confidence_threshold (float): Minimum confidence level for PII detection.
+    """
 
     def __init__(self, model: str = DEFAULT_MODEL, host: str = OLLAMA_HOST):
-        """
-        Initialize the PII detector.
-
+        """Initialize the PII detector.
+        
+        Sets up the PII detector with the specified model and host configuration.
+        
         Args:
-            model: The Ollama model to use (default: from config)
-            host: The Ollama API host URL (default: from config)
+            model (str): The Ollama model to use for PII detection.
+                Defaults to the value from config.DEFAULT_MODEL.
+            host (str): The Ollama API host URL.
+                Defaults to the value from config.OLLAMA_HOST.
         """
         self.model = model
         self.host = host
@@ -36,15 +53,32 @@ class PIIDetector:
         logger.info(f"Initialized PII detector with model: {model}")
 
     def detect_pii(self, text: str, rag_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """
-        Detect PII in the given text using Ollama.
-
+        """Detect PII in the given text using Ollama.
+        
+        Sends the text to a local LLM through Ollama to identify personally
+        identifiable information. It can use RAG context to enhance detection
+        accuracy for ambiguous cases.
+        
         Args:
-            text: The text to analyze for PII
-            rag_context: Optional RAG context to enhance detection
-
+            text (str): The text to analyze for PII.
+            rag_context (Optional[Dict[str, Any]]): Additional context from RAG
+                to enhance detection. Defaults to None.
+        
         Returns:
-            A dictionary containing the detected PII entities
+            Dict[str, Any]: A dictionary containing the detected PII entities with
+                their types, positions, and confidence scores. The format is:
+                {
+                    "entities": [
+                        {
+                            "type": "PERSON_NAME",
+                            "text": "John Doe",
+                            "start": 10,
+                            "end": 18,
+                            "confidence": 0.95
+                        },
+                        ...
+                    ]
+                }
         """
         prompt = self._create_prompt(text, rag_context)
         response = self._send_to_ollama(prompt)
@@ -54,15 +88,19 @@ class PIIDetector:
         return pii_entities
 
     def _create_prompt(self, text: str, rag_context: Optional[Dict[str, Any]] = None) -> str:
-        """
-        Create a prompt for PII detection.
-
+        """Create a prompt for PII detection.
+        
+        Constructs a prompt for the LLM that instructs it to identify PII in the
+        provided text. If RAG context is provided, it is included in the prompt
+        to help the model identify ambiguous PII.
+        
         Args:
-            text: The text to analyze for PII
-            rag_context: Optional RAG context to enhance detection
-
+            text (str): The text to analyze for PII.
+            rag_context (Optional[Dict[str, Any]]): Optional RAG context to enhance
+                detection with additional patterns and examples. Defaults to None.
+        
         Returns:
-            A formatted prompt for the LLM
+            str: A formatted prompt string for the LLM.
         """
         # Base prompt
         prompt = f"""
@@ -109,17 +147,20 @@ Only include actual PII in your response. Do not include transaction amounts, da
         return prompt
 
     def _send_to_ollama(self, prompt: str) -> str:
-        """
-        Send a prompt to Ollama and get the response.
-
+        """Send a prompt to Ollama and get the response.
+        
+        Makes an HTTP request to the Ollama API to generate a response for the
+        given prompt using the configured model.
+        
         Args:
-            prompt: The prompt to send to Ollama
-
+            prompt (str): The prompt to send to Ollama.
+        
         Returns:
-            The response from Ollama
-
+            str: The text response from Ollama.
+        
         Raises:
-            Exception: If there is an error communicating with Ollama
+            Exception: If there is an error communicating with Ollama, such as
+                connection issues or API errors.
         """
         try:
             response = requests.post(
@@ -139,14 +180,18 @@ Only include actual PII in your response. Do not include transaction amounts, da
             raise Exception(f"Error communicating with Ollama: {e}")
 
     def _parse_response(self, response: str) -> Dict[str, Any]:
-        """
-        Parse the response from Ollama to extract PII entities.
-
+        """Parse the response from Ollama to extract PII entities.
+        
+        Extracts the JSON data from the Ollama response and filters entities
+        based on the confidence threshold. Handles various error cases gracefully.
+        
         Args:
-            response: The response from Ollama
-
+            response (str): The text response from Ollama.
+        
         Returns:
-            A dictionary containing the detected PII entities
+            Dict[str, Any]: A dictionary containing the detected PII entities,
+                filtered by the confidence threshold. If parsing fails, returns
+                an empty entities list.
         """
         try:
             # Extract JSON from the response

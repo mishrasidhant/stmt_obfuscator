@@ -2,6 +2,9 @@
 RAG Context Enhancer module for the PDF Bank Statement Obfuscator.
 
 This module provides context enhancement for PII detection using RAG (Retrieval Augmented Generation).
+It leverages ChromaDB as a vector database to store and retrieve patterns and examples of PII
+that can be used to improve detection accuracy in ambiguous cases. The module is designed to
+be optional and can be enabled or disabled through configuration.
 """
 
 import logging
@@ -19,14 +22,30 @@ logger = logging.getLogger(__name__)
 
 
 class RAGContextEnhancer:
-    """RAG Context Enhancer for improving PII detection with contextual information."""
+    """RAG Context Enhancer for improving PII detection with contextual information.
+    
+    This class manages a ChromaDB collection of PII patterns and examples that can be
+    retrieved to provide additional context for the PII detection process. It supports
+    adding new patterns, initializing a knowledge base with common patterns, and
+    retrieving relevant context for a given text chunk.
+    
+    Attributes:
+        enabled (bool): Whether the RAG enhancement is enabled.
+        collection_name (str): The name of the ChromaDB collection.
+        db_path (Path): The path to the ChromaDB database.
+        client (chromadb.PersistentClient): The ChromaDB client.
+        collection (chromadb.Collection): The ChromaDB collection for PII patterns.
+    """
 
     def __init__(self, collection_name: str = "pii_patterns"):
-        """
-        Initialize the RAG Context Enhancer.
-
+        """Initialize the RAG Context Enhancer.
+        
+        Sets up the ChromaDB client and collection for storing and retrieving PII patterns.
+        Creates the necessary directories and initializes the database connection.
+        
         Args:
-            collection_name: The name of the ChromaDB collection to use
+            collection_name (str): The name of the ChromaDB collection to use.
+                Defaults to "pii_patterns".
         """
         self.enabled = RAG_ENABLED
         self.collection_name = collection_name
@@ -51,15 +70,23 @@ class RAGContextEnhancer:
             self.enabled = False
     
     def get_context(self, text_chunk: str, top_k: int = 5) -> Optional[Dict[str, Any]]:
-        """
-        Get context for a text chunk to enhance PII detection.
-
+        """Get context for a text chunk to enhance PII detection.
+        
+        Queries the ChromaDB collection for patterns similar to the given text chunk
+        and returns them as context for PII detection. The context includes patterns
+        and examples that can help identify PII in ambiguous cases.
+        
         Args:
-            text_chunk: The text chunk to get context for
-            top_k: The number of top results to return
-
+            text_chunk (str): The text chunk to get context for.
+            top_k (int): The number of top results to return. Defaults to 5.
+        
         Returns:
-            A dictionary containing context information, or None if RAG is disabled
+            Optional[Dict[str, Any]]: A dictionary containing context information with
+                'patterns' and 'examples' lists, or None if RAG is disabled or no
+                relevant context is found.
+        
+        Raises:
+            Exception: If there is an error retrieving context from ChromaDB.
         """
         if not self.enabled:
             logger.info("RAG is disabled, skipping context enhancement")
@@ -106,16 +133,19 @@ class RAGContextEnhancer:
             return None
     
     def add_pattern(self, pattern: str, pattern_type: str, example: Optional[str] = None) -> bool:
-        """
-        Add a PII pattern to the RAG knowledge base.
-
+        """Add a PII pattern to the RAG knowledge base.
+        
+        Stores a pattern in the ChromaDB collection with its type and an optional
+        example. The pattern can be a regex pattern or a text example that represents
+        a type of PII.
+        
         Args:
-            pattern: The pattern to add
-            pattern_type: The type of PII pattern
-            example: An optional example of the pattern
-
+            pattern (str): The pattern to add (can be a regex pattern or text).
+            pattern_type (str): The type of PII pattern (e.g., "ACCOUNT_NUMBER").
+            example (Optional[str]): An optional example of the pattern. Defaults to None.
+        
         Returns:
-            True if the pattern was added successfully, False otherwise
+            bool: True if the pattern was added successfully, False otherwise.
         """
         if not self.enabled:
             logger.info("RAG is disabled, skipping pattern addition")
@@ -143,11 +173,15 @@ class RAGContextEnhancer:
             return False
     
     def initialize_knowledge_base(self) -> bool:
-        """
-        Initialize the knowledge base with common PII patterns.
-
+        """Initialize the knowledge base with common PII patterns.
+        
+        Populates the ChromaDB collection with a set of predefined patterns for
+        common types of PII found in bank statements, such as account numbers,
+        routing numbers, names, addresses, phone numbers, email addresses, and
+        bank names. This method is typically called once when the application starts.
+        
         Returns:
-            True if the knowledge base was initialized successfully, False otherwise
+            bool: True if the knowledge base was initialized successfully, False otherwise.
         """
         if not self.enabled:
             logger.info("RAG is disabled, skipping knowledge base initialization")

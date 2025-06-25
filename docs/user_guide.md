@@ -256,38 +256,101 @@ logging:
 
 ## Troubleshooting
 
+This section provides solutions to common issues you might encounter when using the PDF Bank Statement Obfuscator.
+
 ### Common Issues
 
 #### Application Won't Start
 
-- Ensure Ollama is installed and running
-- Check system requirements
-- Verify you have sufficient disk space
-- Look for error messages in the log file at `~/.stmt_obfuscator/app.log`
+| Issue | Possible Causes | Solutions |
+|-------|----------------|-----------|
+| Application crashes on startup | • Ollama not installed<br>• Ollama not running<br>• Insufficient system resources | • Verify Ollama is installed by running `ollama list` in Terminal<br>• Start Ollama with `ollama serve`<br>• Ensure you meet minimum system requirements |
+| "Model not found" error | • Required model not downloaded | • Run `ollama pull mistral:7b-instruct` in Terminal |
+| Permission denied error | • Insufficient permissions | • Right-click the app and select "Open" for first launch<br>• Check file permissions in the application directory |
+| Blank or frozen screen | • GUI initialization issue | • Check the log file at `~/.stmt_obfuscator/app.log`<br>• Restart your computer and try again |
 
 #### Processing Fails
 
-- Ensure the PDF is not password-protected
-- Check if the PDF is corrupted or has unusual formatting
-- Verify Ollama is running and the model is properly installed
-- Try with a smaller or simpler PDF first
+| Issue | Possible Causes | Solutions |
+|-------|----------------|-----------|
+| "Failed to process PDF" error | • PDF is password-protected<br>• PDF is corrupted<br>• Unsupported PDF format | • Remove password protection from the PDF<br>• Try repairing the PDF with another tool<br>• Convert the PDF to a standard format |
+| Processing hangs or times out | • PDF is too large<br>• System resources exhausted | • Try processing a smaller section of the PDF<br>• Close other resource-intensive applications<br>• Increase the timeout in config.yaml |
+| "Ollama connection error" | • Ollama service stopped<br>• Network configuration issue | • Restart Ollama with `ollama serve`<br>• Check if another service is using port 11434<br>• Verify firewall settings |
+| "Memory error" | • PDF too complex for available RAM | • Close other applications<br>• Process a smaller PDF<br>• Upgrade your system RAM |
 
 #### PII Detection Issues
 
-- If too many false positives: Increase the confidence threshold
-- If missing PII: Decrease the confidence threshold and manually add missed entities
-- For unusual bank statements: You may need to add more entities manually
+| Issue | Possible Causes | Solutions |
+|-------|----------------|-----------|
+| Too many false positives | • Confidence threshold too low<br>• Unusual formatting in PDF | • Increase confidence threshold (try 0.85 or higher)<br>• Manually deselect incorrect entities |
+| Missing PII | • Confidence threshold too high<br>• Unusual PII format | • Decrease confidence threshold (try 0.65)<br>• Use "Add Entity" button to manually add missed PII<br>• Enable RAG enhancement in settings |
+| Incorrect entity boundaries | • Complex PDF layout<br>• Mixed formatting | • Use the Edit function to adjust entity boundaries<br>• Try regenerating with different confidence settings |
+| Inconsistent detection | • Varying context in document | • Process the document in smaller chunks<br>• Add examples to the RAG knowledge base |
 
 #### Obfuscation Problems
 
-- If the obfuscated PDF looks incorrect: Try regenerating the preview
-- If specific entities aren't being obfuscated: Verify they're checked in the "Include" column
-- If the layout is disrupted: This can happen with complex PDFs; try adjusting entity boundaries
+| Issue | Possible Causes | Solutions |
+|-------|----------------|-----------|
+| Garbled text in output | • Font compatibility issues<br>• Complex layout | • Try a different obfuscation pattern<br>• Use the "Preserve Layout" option in settings |
+| Missing obfuscation | • Entities not included<br>• Processing error | • Verify entities are checked in the "Include" column<br>• Regenerate the preview and check again |
+| Disrupted layout | • Complex PDF structure | • Try the "Conservative Layout" option in settings<br>• Process tables separately from regular text |
+| Partial obfuscation | • Entity boundary detection issue | • Edit the entity to include the full text<br>• Try using regex patterns for consistent entities |
+
+#### Performance Issues
+
+| Issue | Possible Causes | Solutions |
+|-------|----------------|-----------|
+| Slow processing | • Large PDF<br>• Complex layout<br>• Limited system resources | • Process smaller batches of pages<br>• Disable RAG for faster processing<br>• Close other applications |
+| High memory usage | • Large document in memory | • Process the document in smaller chunks<br>• Adjust memory settings in config.yaml |
+| Application becomes unresponsive | • Processing thread blocking UI | • Wait for processing to complete<br>• Check Task Manager/Activity Monitor<br>• Restart the application |
+
+### Advanced Troubleshooting
+
+#### Checking Log Files
+
+The application maintains detailed logs that can help diagnose issues:
+
+1. Main application log: `~/.stmt_obfuscator/app.log`
+2. Ollama interaction log: `~/.stmt_obfuscator/ollama.log`
+3. PDF processing log: `~/.stmt_obfuscator/pdf_processing.log`
+
+To view these logs:
+
+```bash
+cat ~/.stmt_obfuscator/app.log
+```
+
+Look for lines marked `[ERROR]` or `[WARNING]` for potential issues.
+
+#### Resetting the Application
+
+If you encounter persistent issues, you can reset the application to its default state:
+
+1. Close the application
+2. Rename or delete the configuration directory:
+   ```bash
+   mv ~/.stmt_obfuscator ~/.stmt_obfuscator_backup
+   ```
+3. Restart the application (it will create a new configuration directory)
+
+#### Debugging Mode
+
+For advanced users, you can enable debugging mode:
+
+1. Edit `~/.stmt_obfuscator/config.yaml`
+2. Set `logging.level` to `"DEBUG"`
+3. Restart the application
+4. Check the log files for detailed information
 
 ### Getting Help
 
 If you encounter issues not covered in this guide:
 
-1. Check the log file at `~/.stmt_obfuscator/app.log`
+1. Check the log files as described above
 2. Refer to the [troubleshooting guide](troubleshooting.md) for more detailed solutions
-3. Submit an issue on the [GitHub repository](https://github.com/yourusername/stmt_obfuscator/issues)
+3. Search for similar issues in the [GitHub repository](https://github.com/yourusername/stmt_obfuscator/issues)
+4. Submit a new issue with:
+   - A detailed description of the problem
+   - Steps to reproduce the issue
+   - Relevant log file contents
+   - Your system information
