@@ -12,15 +12,15 @@ A privacy-focused desktop application designed to process bank statements while 
 
 ## Project Status
 
-This project is under active development. The following components have been implemented:
+This project has completed all planned development phases. The following components have been implemented:
 
 - ✅ Project setup and environment configuration
 - ✅ PDF parsing module with layout preservation
 - ✅ Enhanced PII detection module design
 - ✅ RAG module design for ambiguous cases
 - ✅ Obfuscation module with pattern-preserving masking
-- 🔄 User interface with PII review capabilities (in progress)
-- 🔄 Comprehensive testing framework (in progress)
+- ✅ User interface with PII review capabilities
+- ✅ Comprehensive testing framework
 
 For detailed documentation on completed subtasks, see the [subtask documentation](docs/subtasks/README.md).
 
@@ -39,6 +39,7 @@ stmt_obfuscator/
 
 ## Documentation
 
+- [User Guide](docs/user_guide.md) - Comprehensive guide for installing and using the application
 - [Subtask Documentation](docs/subtasks/README.md) - Detailed documentation for all completed subtasks
 - [Setup Guide](docs/setup_guide.md) - Detailed setup instructions
 - [Troubleshooting](docs/troubleshooting.md) - Solutions to common issues

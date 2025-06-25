@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "stmt-obfuscator"
-version = "0.1.0"
+version = "1.0.0"
 description = "PDF Bank Statement Obfuscator - A privacy-focused desktop application for removing PII from bank statements"
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
@@ -9,7 +9,6 @@ packages = [{include = "stmt_obfuscator"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 pymupdf = "1.23.8"
-ollama = "0.1.34"
 pyqt6 = "6.6.1"
 chromadb = "0.4.22"
 faker = "^24.0.0"
