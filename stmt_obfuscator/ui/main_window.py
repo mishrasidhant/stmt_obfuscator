@@ -42,6 +42,7 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QRadioButton,
     QButtonGroup,
+    QStackedWidget,
 )
 # Already imported QTextCursor above
 
@@ -49,6 +50,7 @@ from stmt_obfuscator.pdf_parser.parser import PDFParser
 from stmt_obfuscator.pii_detection.detector import PIIDetector
 from stmt_obfuscator.obfuscation.obfuscator import Obfuscator
 from stmt_obfuscator.output_generator.generator import OutputGenerator
+from stmt_obfuscator.output_generator.pdf_preview import PDFPreviewGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -444,9 +446,24 @@ class MainWindow(QMainWindow):
         original_label = QLabel("Original Document:")
         left_layout.addWidget(original_label)
 
+        # Create a stacked widget for different preview types
+        self.original_preview_stack = QTabWidget()
+        
+        # Text preview
         self.original_preview = QTextEdit()
         self.original_preview.setReadOnly(True)
-        left_layout.addWidget(self.original_preview)
+        self.original_preview_stack.addTab(self.original_preview, "Text View")
+        
+        # PDF preview (will be populated later)
+        self.original_pdf_scroll = QScrollArea()
+        self.original_pdf_scroll.setWidgetResizable(True)
+        self.original_pdf_container = QWidget()
+        self.original_pdf_layout = QVBoxLayout(self.original_pdf_container)
+        self.original_pdf_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.original_pdf_scroll.setWidget(self.original_pdf_container)
+        self.original_preview_stack.addTab(self.original_pdf_scroll, "PDF View")
+        
+        left_layout.addWidget(self.original_preview_stack)
 
         # Right section: Obfuscated document
         right_widget = QWidget()
@@ -455,9 +472,24 @@ class MainWindow(QMainWindow):
         obfuscated_label = QLabel("Obfuscated Document:")
         right_layout.addWidget(obfuscated_label)
 
+        # Create a stacked widget for different preview types
+        self.obfuscated_preview_stack = QTabWidget()
+        
+        # Text preview
         self.obfuscated_preview = QTextEdit()
         self.obfuscated_preview.setReadOnly(True)
-        right_layout.addWidget(self.obfuscated_preview)
+        self.obfuscated_preview_stack.addTab(self.obfuscated_preview, "Text View")
+        
+        # PDF preview (will be populated later)
+        self.obfuscated_pdf_scroll = QScrollArea()
+        self.obfuscated_pdf_scroll.setWidgetResizable(True)
+        self.obfuscated_pdf_container = QWidget()
+        self.obfuscated_pdf_layout = QVBoxLayout(self.obfuscated_pdf_container)
+        self.obfuscated_pdf_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.obfuscated_pdf_scroll.setWidget(self.obfuscated_pdf_container)
+        self.obfuscated_preview_stack.addTab(self.obfuscated_pdf_scroll, "PDF View")
+        
+        right_layout.addWidget(self.obfuscated_preview_stack)
 
         # Add widgets to splitter
         splitter.addWidget(left_widget)
@@ -476,11 +508,21 @@ class MainWindow(QMainWindow):
         format_layout.addWidget(format_label)
         format_layout.addWidget(self.output_format)
         
+        # Add preview quality selection
+        quality_layout = QHBoxLayout()
+        quality_label = QLabel("Preview Quality:")
+        self.preview_quality = QComboBox()
+        self.preview_quality.addItems(["Low", "Medium", "High"])
+        self.preview_quality.setCurrentIndex(1)  # Default to Medium
+        quality_layout.addWidget(quality_label)
+        quality_layout.addWidget(self.preview_quality)
+        
         self.preview_button = QPushButton("Generate Preview")
         self.preview_button.clicked.connect(self._generate_preview)
         self.preview_button.setEnabled(False)
         
         controls_layout.addLayout(format_layout)
+        controls_layout.addLayout(quality_layout)
         controls_layout.addStretch()
         controls_layout.addWidget(self.preview_button)
 
@@ -871,8 +913,19 @@ class MainWindow(QMainWindow):
         if not self.processing_result:
             return
 
+        # Get the selected output format
+        output_format = self.output_format.currentText().lower()
+        
+        # Get the selected preview quality
+        quality_index = self.preview_quality.currentIndex()
+        dpi_values = [100, 150, 300]  # Low, Medium, High
+        preview_dpi = dpi_values[quality_index]
+
         # Show the original document
         self.original_preview.setText(self.document_text)
+        
+        # Clear any existing PDF previews
+        self._clear_pdf_preview_containers()
 
         # Get the selected entities for obfuscation
         selected_entities = [
@@ -883,6 +936,7 @@ class MainWindow(QMainWindow):
 
         # Create a worker to generate the preview
         self.status_bar.showMessage("Generating obfuscation preview...")
+        self.progress_bar.setValue(10)
 
         try:
             # Get the obfuscator from the processing result
@@ -890,14 +944,14 @@ class MainWindow(QMainWindow):
             logger.info("Retrieved obfuscator from processing result")
             
             # Create a completely new document structure instead of using the existing one
-            document = {
+            original_document = {
                 "full_text": self.document_text,
-                "metadata": {"source": "preview"},
+                "metadata": {"source": "preview_original"},
                 "text_blocks": [{"text": self.document_text}]
             }
             
-            logger.info(f"Created new document structure: {type(document)}")
-            logger.info(f"Document keys: {document.keys()}")
+            logger.info(f"Created new document structure: {type(original_document)}")
+            logger.info(f"Document keys: {original_document.keys()}")
             logger.info(f"Selected entities count: {len(selected_entities)}")
             
             # Debug log the first entity if available
@@ -905,24 +959,26 @@ class MainWindow(QMainWindow):
                 logger.info(f"First entity: {selected_entities[0]}")
             
             # Obfuscate the document with detailed error handling
+            self.progress_bar.setValue(30)
             try:
                 logger.info("Starting document obfuscation")
                 obfuscated_document = obfuscator.obfuscate_document(
-                    document, selected_entities
+                    original_document, selected_entities
                 )
                 logger.info("Document obfuscation completed successfully")
             except TypeError as te:
                 logger.error(f"Type error during obfuscation: {te}")
                 # Try to identify which object is causing the issue
                 if "is not iterable" in str(te):
-                    for key, value in document.items():
+                    for key, value in original_document.items():
                         logger.error(f"Document key '{key}' has type: {type(value)}")
                 raise
             except Exception as ex:
                 logger.error(f"Error during obfuscation: {ex}")
                 raise
 
-            # Show the obfuscated document
+            # Show the obfuscated text
+            self.progress_bar.setValue(50)
             if "full_text" in obfuscated_document:
                 self.obfuscated_preview.setText(obfuscated_document["full_text"])
                 logger.info("Set obfuscated text in preview")
@@ -931,11 +987,44 @@ class MainWindow(QMainWindow):
                     "Error: Could not generate obfuscated text"
                 )
                 logger.error("No full_text in obfuscated document")
+            
+            # Generate PDF previews if PDF format is selected
+            if output_format == "pdf":
+                self.progress_bar.setValue(60)
+                self.status_bar.showMessage("Generating PDF previews...")
+                
+                # Create PDF preview generator
+                pdf_preview_generator = PDFPreviewGenerator()
+                
+                # Generate original document preview
+                logger.info("Generating original PDF preview")
+                original_pixmaps = pdf_preview_generator.generate_preview(
+                    original_document, dpi=preview_dpi
+                )
+                
+                # Generate obfuscated document preview
+                logger.info("Generating obfuscated PDF preview")
+                obfuscated_pixmaps = pdf_preview_generator.generate_preview(
+                    obfuscated_document, dpi=preview_dpi
+                )
+                
+                # Display the PDF previews
+                self.progress_bar.setValue(80)
+                self._display_pdf_previews(original_pixmaps, obfuscated_pixmaps)
+                
+                # Switch to PDF view tabs
+                self.original_preview_stack.setCurrentIndex(1)
+                self.obfuscated_preview_stack.setCurrentIndex(1)
+            else:
+                # Switch to text view tabs
+                self.original_preview_stack.setCurrentIndex(0)
+                self.obfuscated_preview_stack.setCurrentIndex(0)
 
             # Enable the save button
             self.save_button.setEnabled(True)
             self.save_action.setEnabled(True)
 
+            self.progress_bar.setValue(100)
             self.status_bar.showMessage("Preview generated successfully")
 
             # Switch to the output preview tab
@@ -950,6 +1039,59 @@ class MainWindow(QMainWindow):
                 self, "Preview Error", f"Error generating obfuscation preview: {str(e)}"
             )
             self.status_bar.showMessage("Error generating preview")
+            self.progress_bar.setValue(0)
+    
+    def _clear_pdf_preview_containers(self):
+        """Clear the PDF preview containers."""
+        # Clear original PDF container
+        while self.original_pdf_layout.count():
+            item = self.original_pdf_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Clear obfuscated PDF container
+        while self.obfuscated_pdf_layout.count():
+            item = self.obfuscated_pdf_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+    
+    def _display_pdf_previews(self, original_pixmaps, obfuscated_pixmaps):
+        """Display PDF preview pixmaps in the UI."""
+        # Display original document previews
+        for i, pixmap in enumerate(original_pixmaps):
+            page_label = QLabel(f"Page {i+1}")
+            page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.original_pdf_layout.addWidget(page_label)
+            
+            image_label = QLabel()
+            image_label.setPixmap(pixmap)
+            image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.original_pdf_layout.addWidget(image_label)
+            
+            # Add some spacing between pages
+            if i < len(original_pixmaps) - 1:
+                spacer = QFrame()
+                spacer.setFrameShape(QFrame.Shape.HLine)
+                spacer.setFrameShadow(QFrame.Shadow.Sunken)
+                self.original_pdf_layout.addWidget(spacer)
+        
+        # Display obfuscated document previews
+        for i, pixmap in enumerate(obfuscated_pixmaps):
+            page_label = QLabel(f"Page {i+1}")
+            page_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.obfuscated_pdf_layout.addWidget(page_label)
+            
+            image_label = QLabel()
+            image_label.setPixmap(pixmap)
+            image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self.obfuscated_pdf_layout.addWidget(image_label)
+            
+            # Add some spacing between pages
+            if i < len(obfuscated_pixmaps) - 1:
+                spacer = QFrame()
+                spacer.setFrameShape(QFrame.Shape.HLine)
+                spacer.setFrameShadow(QFrame.Shadow.Sunken)
+                self.obfuscated_pdf_layout.addWidget(spacer)
 
     def _on_save_file(self):
         """Handle saving the obfuscated file."""

@@ -17,6 +17,11 @@ from stmt_obfuscator.config import (
     PDF_INCLUDE_METADATA,
     PDF_INCLUDE_TIMESTAMP,
     PDF_MARGIN,
+    PDF_PRESERVE_LAYOUT,
+)
+from stmt_obfuscator.output_generator.layout_analyzer import (
+    LayoutAnalyzer,
+    create_layout_mapping,
 )
 
 logger = logging.getLogger(__name__)
@@ -76,6 +81,8 @@ class PDFFormatter:
         include_timestamp: bool = PDF_INCLUDE_TIMESTAMP,
         include_metadata: bool = PDF_INCLUDE_METADATA,
         font_fallbacks: Optional[List[str]] = None,
+        preserve_layout: bool = PDF_PRESERVE_LAYOUT,
+        layout_detail_level: str = "medium",
     ):
         """
         Initialize the PDF formatter.
@@ -88,6 +95,9 @@ class PDFFormatter:
             include_metadata: Whether to include metadata in the PDF
             font_fallbacks: List of fallback fonts to use for characters not supported
                 by the primary font
+            preserve_layout: Whether to preserve the original document layout
+            layout_detail_level: The level of detail for layout analysis
+                ("low", "medium", or "high")
         """
         self.font = font
         self.font_size = font_size
@@ -95,6 +105,8 @@ class PDFFormatter:
         self.include_timestamp = include_timestamp
         self.include_metadata = include_metadata
         self.font_fallbacks = font_fallbacks or DEFAULT_FONT_FALLBACKS
+        self.preserve_layout = preserve_layout
+        self.layout_detail_level = layout_detail_level
 
         # Ensure the primary font is not duplicated in fallbacks
         if self.font in self.font_fallbacks:
@@ -102,9 +114,13 @@ class PDFFormatter:
 
         # Create a font cache to avoid repeated lookups
         self.font_cache = {}
+        
+        # Initialize layout analyzer if layout preservation is enabled
+        self.layout_analyzer = LayoutAnalyzer(detail_level=layout_detail_level) if preserve_layout else None
 
         logger.info(
-            f"Initialized PDFFormatter with font fallbacks: {self.font_fallbacks}"
+            f"Initialized PDFFormatter with font fallbacks: {self.font_fallbacks}, "
+            f"preserve_layout: {preserve_layout}, layout_detail_level: {layout_detail_level}"
         )
 
     def format_document(
@@ -121,19 +137,12 @@ class PDFFormatter:
             The formatted PDF document
         """
         try:
-            # Add a new page
-            pdf_doc.new_page()
-
-            # Add header
-            self.add_header(pdf_doc, document)
-
-            # Add content
-            self.add_content(pdf_doc, document)
-
-            # Add footer
-            self.add_footer(pdf_doc, document)
-
-            return pdf_doc
+            if self.preserve_layout and "original_pdf" in document:
+                # Use layout preservation if enabled and original PDF is available
+                return self.format_document_with_layout_preservation(document, pdf_doc)
+            else:
+                # Fall back to standard formatting
+                return self.format_document_standard(document, pdf_doc)
 
         except Exception as e:
             logger.error(f"Error formatting PDF document: {e}")
@@ -143,6 +152,220 @@ class PDFFormatter:
 
             # Return the PDF document even if there was an error
             return pdf_doc
+            
+    def format_document_standard(
+        self, document: Dict[str, Any], pdf_doc: fitz.Document
+    ) -> fitz.Document:
+        """
+        Format a document as a PDF using the standard approach.
+
+        Args:
+            document: The document to format
+            pdf_doc: The PDF document to write to
+
+        Returns:
+            The formatted PDF document
+        """
+        # Add a new page
+        pdf_doc.new_page()
+
+        # Add header
+        self.add_header(pdf_doc, document)
+
+        # Add content
+        self.add_content(pdf_doc, document)
+
+        # Add footer
+        self.add_footer(pdf_doc, document)
+
+        return pdf_doc
+        
+    def format_document_with_layout_preservation(
+        self, document: Dict[str, Any], pdf_doc: fitz.Document
+    ) -> fitz.Document:
+        """
+        Format a document as a PDF while preserving the original layout.
+
+        Args:
+            document: The document to format
+            pdf_doc: The PDF document to write to
+
+        Returns:
+            The formatted PDF document
+        """
+        try:
+            # Get the original PDF document
+            original_pdf_path = document.get("original_pdf")
+            if not original_pdf_path:
+                logger.warning("Original PDF path not provided, falling back to standard formatting")
+                return self.format_document_standard(document, pdf_doc)
+                
+            # Open the original PDF to analyze its layout
+            with fitz.open(original_pdf_path) as original_pdf:
+                # Analyze the layout of the original document
+                layout_map = self.layout_analyzer.analyze_document(original_pdf)
+                
+                # Create a mapping between original layout elements and obfuscated content
+                obfuscated_text = document.get("full_text", "")
+                content_mapping = create_layout_mapping(layout_map, obfuscated_text)
+                
+                # Create pages in the output PDF matching the original
+                for page_num in range(len(original_pdf)):
+                    # Create a new page with the same dimensions as the original
+                    original_page = original_pdf[page_num]
+                    new_page = pdf_doc.new_page(
+                        width=original_page.rect.width,
+                        height=original_page.rect.height
+                    )
+                    
+                    # If this page has mapped content, add it
+                    if page_num in content_mapping:
+                        self.render_page_with_layout(new_page, content_mapping[page_num])
+                    
+                    # Add page number
+                    self.add_page_number(new_page, page_num, len(original_pdf))
+                
+                # Add metadata if enabled
+                if self.include_metadata:
+                    self.add_metadata_page(pdf_doc, document)
+                
+                return pdf_doc
+                
+        except Exception as e:
+            logger.error(f"Error in layout preservation: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            
+            # Fall back to standard formatting
+            logger.info("Falling back to standard formatting")
+            return self.format_document_standard(document, pdf_doc)
+    
+    def render_page_with_layout(
+        self, page: fitz.Page, content_mapping: List[Tuple[Any, str]]
+    ) -> None:
+        """
+        Render content on a page according to the original layout.
+        
+        Args:
+            page: The PDF page to render on
+            content_mapping: List of (layout_element, obfuscated_content) pairs
+        """
+        for layout_element, obfuscated_content in content_mapping:
+            if layout_element.element_type == "text" and obfuscated_content:
+                # Get element attributes
+                bbox = layout_element.bbox
+                attributes = layout_element.attributes
+                
+                # Determine text position based on alignment
+                alignment = attributes.get("alignment", "left")
+                x, y = bbox[0], bbox[1]
+                
+                if alignment == "center":
+                    # Center-aligned text
+                    x = (bbox[0] + bbox[2]) / 2
+                    text_width, _ = self.get_text_width_with_fallback(
+                        obfuscated_content, attributes.get("font_size", self.font_size)
+                    )
+                    x -= text_width / 2
+                elif alignment == "right":
+                    # Right-aligned text
+                    x = bbox[2]
+                    text_width, _ = self.get_text_width_with_fallback(
+                        obfuscated_content, attributes.get("font_size", self.font_size)
+                    )
+                    x -= text_width
+                
+                # Use the original font size if available, otherwise use default
+                font_size = attributes.get("font_size", self.font_size)
+                
+                # Insert the text with font fallback support
+                self.insert_text_with_fallback(
+                    page,
+                    (x, y),
+                    obfuscated_content,
+                    fontsize=font_size,
+                    color=attributes.get("color", (0, 0, 0)),
+                )
+    
+    def add_page_number(self, page: fitz.Page, page_num: int, total_pages: int) -> None:
+        """
+        Add a page number to a page.
+        
+        Args:
+            page: The PDF page to add the page number to
+            page_num: The page number (0-based)
+            total_pages: The total number of pages
+        """
+        footer_text = f"Page {page_num + 1} of {total_pages}"
+        
+        # Calculate position (centered at bottom of page)
+        text_width, _ = self.get_text_width_with_fallback(
+            footer_text, self.font_size - 2
+        )
+        x = (page.rect.width - text_width) / 2
+        y = page.rect.height - self.margin / 2
+        
+        # Insert the text with font fallback support
+        self.insert_text_with_fallback(
+            page,
+            (x, y),
+            footer_text,
+            fontsize=self.font_size - 2,
+            color=(0, 0, 0),
+        )
+    
+    def add_metadata_page(self, pdf_doc: fitz.Document, document: Dict[str, Any]) -> None:
+        """
+        Add a page with metadata information.
+        
+        Args:
+            pdf_doc: The PDF document to add the metadata page to
+            document: The document containing the metadata
+        """
+        metadata = document.get("metadata", {})
+        if not metadata:
+            return
+            
+        # Create a new page for metadata
+        page = pdf_doc.new_page()
+        
+        # Add a title
+        title_text = "Document Metadata"
+        title_width, _ = self.get_text_width_with_fallback(
+            title_text, self.font_size + 4
+        )
+        x = (page.rect.width - title_width) / 2
+        y = self.margin
+        
+        self.insert_text_with_fallback(
+            page,
+            (x, y),
+            title_text,
+            fontsize=self.font_size + 4,
+            color=(0, 0, 0),
+        )
+        
+        # Add a separator line
+        page.draw_line(
+            (self.margin, y + self.font_size + 10),
+            (page.rect.width - self.margin, y + self.font_size + 10),
+            color=(0, 0, 0),
+            width=0.5,
+        )
+        
+        # Add metadata entries
+        y += self.font_size + 30
+        for key, value in metadata.items():
+            if key != "obfuscation_timestamp":  # Already shown in header
+                entry_text = f"{key}: {value}"
+                self.insert_text_with_fallback(
+                    page,
+                    (self.margin, y),
+                    entry_text,
+                    fontsize=self.font_size,
+                    color=(0, 0, 0),
+                )
+                y += self.font_size * 1.5
 
     def add_header(self, pdf_doc: fitz.Document, document: Dict[str, Any]) -> None:
         """

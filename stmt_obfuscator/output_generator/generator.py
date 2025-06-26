@@ -18,7 +18,8 @@ from stmt_obfuscator.config import (
     PDF_FONT_SIZE,
     PDF_MARGIN,
     PDF_INCLUDE_TIMESTAMP,
-    PDF_INCLUDE_METADATA
+    PDF_INCLUDE_METADATA,
+    PDF_PRESERVE_LAYOUT
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,8 @@ class OutputGenerator:
         pdf_font_size: int = PDF_FONT_SIZE,
         pdf_margin: int = PDF_MARGIN,
         pdf_include_timestamp: bool = PDF_INCLUDE_TIMESTAMP,
-        pdf_include_metadata: bool = PDF_INCLUDE_METADATA
+        pdf_include_metadata: bool = PDF_INCLUDE_METADATA,
+        pdf_preserve_layout: bool = PDF_PRESERVE_LAYOUT
     ):
         """
         Initialize the output generator.
@@ -51,6 +53,7 @@ class OutputGenerator:
             pdf_margin: The margin to use for PDF output (in points)
             pdf_include_timestamp: Whether to include a timestamp in PDF output
             pdf_include_metadata: Whether to include metadata in PDF output
+            pdf_preserve_layout: Whether to preserve the original document layout
         """
         self.pdf_export_enabled = pdf_export_enabled
         self.pdf_formatter = PDFFormatter(
@@ -58,7 +61,8 @@ class OutputGenerator:
             font_size=pdf_font_size,
             margin=pdf_margin,
             include_timestamp=pdf_include_timestamp,
-            include_metadata=pdf_include_metadata
+            include_metadata=pdf_include_metadata,
+            preserve_layout=pdf_preserve_layout
         )
         
         logger.info("Initialized OutputGenerator")
@@ -151,6 +155,12 @@ class OutputGenerator:
             
             # Create a new PDF document
             pdf_doc = fitz.open()
+            
+            # If we're preserving layout, ensure the original PDF path is included
+            if self.pdf_formatter.preserve_layout and "source_file" in document:
+                # Add the original PDF path to the document
+                document["original_pdf"] = document.get("source_file")
+                logger.info(f"Using original PDF for layout preservation: {document['original_pdf']}")
             
             # Format the document
             pdf_doc = self.pdf_formatter.format_document(document, pdf_doc)

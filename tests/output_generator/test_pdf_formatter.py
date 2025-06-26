@@ -10,6 +10,7 @@ from stmt_obfuscator.output_generator.pdf_formatter import (
     DEFAULT_FONT_FALLBACKS,
     PDFFormatter,
 )
+from stmt_obfuscator.output_generator.layout_analyzer import LayoutAnalyzer
 
 
 @pytest.fixture
@@ -142,6 +143,8 @@ def test_custom_formatting_options():
         include_timestamp=False,
         include_metadata=False,
         font_fallbacks=["Helvetica", "Courier"],
+        preserve_layout=True,
+        layout_detail_level="high",
     )
 
     # Check that the options were set correctly
@@ -151,6 +154,9 @@ def test_custom_formatting_options():
     assert formatter.include_timestamp is False
     assert formatter.include_metadata is False
     assert formatter.font_fallbacks == ["Helvetica", "Courier"]
+    assert formatter.preserve_layout is True
+    assert formatter.layout_detail_level == "high"
+    assert isinstance(formatter.layout_analyzer, LayoutAnalyzer)
 
 
 def test_wrap_text():
@@ -322,3 +328,142 @@ def test_document_with_special_characters(sample_document):
 
         # Check that the file exists
         assert output_path.exists()
+
+
+def test_format_document_with_layout_preservation(sample_document):
+    """Test formatting a document with layout preservation."""
+    # Create a sample PDF to use as the original
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        original_pdf_path = Path(temp_file.name)
+    
+    # Create a new PDF document with some content
+    pdf_doc = fitz.open()
+    page = pdf_doc.new_page()
+    
+    # Add some text with different alignments
+    page.insert_text((72, 72), "Left-aligned text", fontname="Helvetica", fontsize=12)
+    
+    center_text = "Center-aligned text"
+    text_width = fitz.get_text_length(center_text, fontname="Helvetica", fontsize=12)
+    x = (page.rect.width - text_width) / 2
+    page.insert_text((x, 100), center_text, fontname="Helvetica", fontsize=12)
+    
+    right_text = "Right-aligned text"
+    text_width = fitz.get_text_length(right_text, fontname="Helvetica", fontsize=12)
+    x = page.rect.width - 72 - text_width
+    page.insert_text((x, 128), right_text, fontname="Helvetica", fontsize=12)
+    
+    # Save the PDF
+    pdf_doc.save(original_pdf_path)
+    pdf_doc.close()
+    
+    try:
+        # Create a formatter with layout preservation enabled
+        formatter = PDFFormatter(preserve_layout=True)
+        
+        # Add the original PDF path to the document
+        sample_document["original_pdf"] = str(original_pdf_path)
+        
+        # Create a new PDF document
+        output_pdf = fitz.open()
+        
+        # Format the document with layout preservation
+        result = formatter.format_document(sample_document, output_pdf)
+        
+        # Check that the document was formatted successfully
+        assert result is not None
+        assert len(result) > 0
+        
+        # Save the PDF to a temporary file for inspection
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / "test_layout_preservation.pdf"
+            result.save(output_path)
+            
+            # Check that the file exists and is a valid PDF
+            assert output_path.exists()
+            
+            # Open the PDF and check its content
+            with fitz.open(output_path) as pdf:
+                assert len(pdf) > 0
+    
+    finally:
+        # Clean up
+        original_pdf_path.unlink()
+
+
+def test_format_document_standard_fallback(sample_document):
+    """Test that standard formatting is used as a fallback when layout preservation fails."""
+    # Create a formatter with layout preservation enabled
+    formatter = PDFFormatter(preserve_layout=True)
+    
+    # Create a new PDF document
+    pdf_doc = fitz.open()
+    
+    # Format the document without providing an original PDF path
+    # This should fall back to standard formatting
+    result = formatter.format_document(sample_document, pdf_doc)
+    
+    # Check that the document was formatted successfully
+    assert result is not None
+    assert len(result) > 0
+    
+    # Save the PDF to a temporary file for inspection
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_path = Path(temp_dir) / "test_fallback.pdf"
+        result.save(output_path)
+        
+        # Check that the file exists
+        assert output_path.exists()
+
+
+def test_add_page_number():
+    """Test adding a page number to a page."""
+    formatter = PDFFormatter()
+    
+    # Create a new PDF document
+    pdf_doc = fitz.open()
+    page = pdf_doc.new_page()
+    
+    # Add a page number
+    formatter.add_page_number(page, 0, 3)  # Page 1 of 3
+    
+    # Save the PDF to a temporary file for inspection
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_path = Path(temp_dir) / "test_page_number.pdf"
+        pdf_doc.save(output_path)
+        
+        # Check that the file exists
+        assert output_path.exists()
+        
+        # Open the PDF and check for the page number text
+        with fitz.open(output_path) as pdf:
+            text = pdf[0].get_text()
+            assert "Page 1 of 3" in text
+
+
+def test_add_metadata_page(sample_document):
+    """Test adding a metadata page."""
+    formatter = PDFFormatter()
+    
+    # Create a new PDF document
+    pdf_doc = fitz.open()
+    
+    # Add a metadata page
+    formatter.add_metadata_page(pdf_doc, sample_document)
+    
+    # Check that a page was added
+    assert len(pdf_doc) == 1
+    
+    # Save the PDF to a temporary file for inspection
+    with tempfile.TemporaryDirectory() as temp_dir:
+        output_path = Path(temp_dir) / "test_metadata_page.pdf"
+        pdf_doc.save(output_path)
+        
+        # Check that the file exists
+        assert output_path.exists()
+        
+        # Open the PDF and check for metadata content
+        with fitz.open(output_path) as pdf:
+            text = pdf[0].get_text()
+            assert "Document Metadata" in text
+            assert "obfuscated: True" in text or "obfuscated:True" in text

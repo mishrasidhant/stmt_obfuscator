@@ -9,8 +9,9 @@ This guide provides detailed instructions on how to install, set up, and use the
 3. [Using the Application](#using-the-application)
 4. [Reviewing and Correcting PII](#reviewing-and-correcting-pii)
 5. [Understanding Confidence Levels](#understanding-confidence-levels)
-6. [Customizing Application Settings](#customizing-application-settings)
-7. [Troubleshooting](#troubleshooting)
+6. [Using PDF Export Functionality](#using-pdf-export-functionality)
+7. [Customizing Application Settings](#customizing-application-settings)
+8. [Troubleshooting](#troubleshooting)
 
 ## Installation
 
@@ -92,10 +93,12 @@ The application uses a default configuration that works well for most users. How
    - The application will switch to the Output Preview tab
    - You'll see the original document on the left and the obfuscated version on the right
 
-5. **Save the Obfuscated PDF**:
-   - Click the "Save Obfuscated PDF" button or use File > Save Obfuscated PDF (Ctrl+S)
+5. **Save the Obfuscated Document**:
+   - Click the "Save Obfuscated Document" button or use File > Save Obfuscated Document (Ctrl+S)
+   - Select the desired format (Text or PDF) from the dropdown menu
+   - Configure PDF export options if PDF format is selected
    - Choose a location to save the obfuscated document
-   - The application will create a new PDF with all selected PII entities obfuscated
+   - The application will create a new document with all selected PII entities obfuscated
 
 ### Workflow Example
 
@@ -204,6 +207,91 @@ Several factors influence the AI's confidence in PII detection:
 - **Format**: Text matching common PII patterns (e.g., XXX-XX-XXXX for SSNs) receives higher confidence
 - **Ambiguity**: Text that could have multiple interpretations receives lower confidence
 - **Document Quality**: Poor quality scans or unusual formatting can reduce confidence
+
+## Using PDF Export Functionality
+
+The PDF Bank Statement Obfuscator provides robust PDF export capabilities that allow you to generate professionally formatted obfuscated bank statements while preserving the original document's layout.
+
+### PDF Export Options
+
+When saving an obfuscated document, you can select "PDF" from the format dropdown menu to access the following PDF export options:
+
+1. **Layout Preservation**:
+   - **Enable Layout Preservation**: When checked, the application will attempt to preserve the original document's layout, including columns, spacing, and positioning of elements.
+   - **Layout Detail Level**: Choose between Low, Medium, or High detail levels. Higher detail levels provide more accurate layout preservation but may require more processing time.
+
+2. **Font Settings**:
+   - **Font Family**: Select the primary font to use in the PDF. Default is Helvetica.
+   - **Font Size**: Set the base font size for the document. Default is 11pt.
+   - **Enable Font Fallbacks**: When checked, the application will automatically use alternative fonts for characters not supported by the primary font.
+
+3. **Page Settings**:
+   - **Margins**: Set the page margins in points (1/72 inch). Default is 72pt (1 inch).
+   - **Include Page Numbers**: When checked, page numbers will be added to the document.
+   - **Include Timestamps**: When checked, a timestamp will be added to the document header.
+   - **Include Metadata**: When checked, metadata about the obfuscation process will be included in the document.
+
+### PDF Export Workflow
+
+To export an obfuscated document as a PDF:
+
+1. Process your bank statement as normal
+2. Review and edit the detected PII entities
+3. Click the "Generate Preview" button to see how the obfuscated document will look
+4. Click the "Save Obfuscated Document" button
+5. Select "PDF" from the format dropdown menu
+6. Configure the PDF export options as desired
+7. Click "Save" to generate the PDF
+
+### PDF Preview
+
+The application provides an accurate preview of how the final PDF will look:
+
+1. **Preview Modes**:
+   - **Text Mode**: Shows a simple text representation of the document
+   - **PDF Mode**: Shows an exact preview of how the PDF will look
+
+2. **Preview Quality**:
+   - **Low**: Faster rendering but lower image quality
+   - **Medium**: Balanced performance and quality
+   - **High**: Highest quality but slower rendering
+
+3. **Navigation**:
+   - Use the page navigation controls to move between pages in multi-page documents
+   - Use the zoom controls to adjust the preview size
+
+### Key PDF Export Features
+
+1. **Advanced Layout Preservation**:
+   - Preserves the original document's layout, including columns, spacing, and positioning of elements
+   - Maintains text alignment (left, center, right)
+   - Identifies and properly positions headers and footers
+   - Falls back to standard formatting when layout preservation is not possible
+
+2. **Intelligent Text Wrapping**:
+   - Automatically wraps text within page margins
+   - Handles long words by splitting them across lines when necessary
+   - Preserves paragraph breaks with consistent spacing
+
+3. **Font Fallback System**:
+   - Automatically selects appropriate fonts for different character sets
+   - Ensures special characters and symbols are properly displayed
+   - Provides consistent rendering across different systems
+
+### Tips for Best Results
+
+1. **For Complex Layouts**:
+   - Use the "High" layout detail level for documents with complex formatting
+   - Enable font fallbacks to ensure all characters are properly displayed
+
+2. **For Large Documents**:
+   - Use the "Low" or "Medium" layout detail level to improve performance
+   - Consider disabling metadata inclusion to reduce file size
+
+3. **For Official Documents**:
+   - Use a professional font like Times-Roman or Helvetica
+   - Enable page numbers and timestamps for better document tracking
+   - Consider adjusting margins to match the original document
 
 ## Customizing Application Settings
 

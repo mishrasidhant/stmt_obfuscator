@@ -451,8 +451,11 @@ The following options can be configured for PDF export:
 1. **Font Settings**:
    - Font Family: Default is Helvetica
    - Font Size: Default is 11pt
+   - Font Fallbacks: Automatically handles special characters with appropriate fonts
 
 2. **Layout Settings**:
+   - Layout Preservation: Maintains the original document's layout including columns, spacing, and positioning
+   - Layout Detail Level: Choose between Low, Medium, or High detail levels
    - Margins: Default is 72pt (1 inch)
    - Include timestamps: Enabled by default
    - Include metadata: Enabled by default
@@ -467,15 +470,44 @@ The following options can be configured for PDF export:
        margin: 72
        include_timestamp: true
        include_metadata: true
+       preserve_layout: true
+       layout_detail_level: "medium"
+       font_fallbacks:
+         - "Times-Roman"
+         - "Courier"
+         - "Symbol"
      ```
+
+### Key PDF Export Features
+
+1. **Advanced Layout Preservation**:
+   - Preserves the original document's layout, including columns, spacing, and positioning of elements
+   - Maintains text alignment (left, center, right)
+   - Identifies and properly positions headers and footers
+   - Falls back to standard formatting when layout preservation is not possible
+
+2. **Intelligent Text Wrapping**:
+   - Automatically wraps text within page margins
+   - Handles long words by splitting them across lines when necessary
+   - Preserves paragraph breaks with consistent spacing
+
+3. **Font Fallback System**:
+   - Automatically selects appropriate fonts for different character sets
+   - Ensures special characters and symbols are properly displayed
+   - Provides consistent rendering across different systems
+
+4. **Accurate Preview**:
+   - Preview in the UI exactly matches the final PDF output
+   - Supports multi-page document previews
+   - Offers configurable preview quality settings
 
 ### PDF Export Limitations
 
 While the PDF export functionality works well for most bank statements, there are some limitations to be aware of:
 
-1. **Table Formatting**: Complex tables may not maintain their exact original formatting
+1. **Complex Tables**: Very complex tables may not maintain their exact original formatting
 2. **Large Documents**: Processing very large statements (>50 pages) may be slow
-3. **Special Characters**: Some special characters might not render correctly with all fonts
+3. **Unusual Fonts**: Documents with unusual or custom fonts may fall back to standard fonts
 
 For best results, review the generated PDF and adjust settings as needed for your specific documents.
 
@@ -487,10 +519,16 @@ If you encounter issues with PDF export:
    - Check that PyMuPDF is properly installed: `pip install --upgrade pymupdf`
    - Ensure you have write permissions for the output directory
 
-2. **Formatting Issues**:
-   - Try adjusting the font and margin settings
-   - For complex documents, text format may provide better results
+2. **Layout Preservation Issues**:
+   - Try adjusting the layout detail level (Low, Medium, High)
+   - For very complex layouts, try disabling layout preservation
+   - Check if the original PDF has selectable text (required for layout preservation)
 
-3. **Performance Issues**:
-   - For large documents, try disabling metadata inclusion
+3. **Font Issues**:
+   - If special characters aren't displaying correctly, try adding additional font fallbacks
+   - For documents with unusual scripts, ensure appropriate fonts are installed on your system
+
+4. **Performance Issues**:
+   - For large documents, try using a lower layout detail level
+   - Disable metadata inclusion to reduce file size
    - Close other applications to free up system resources

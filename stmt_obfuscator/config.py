@@ -40,6 +40,7 @@ PDF_MARGIN = 72  # 1 inch in points
 PDF_INCLUDE_TIMESTAMP = True
 PDF_INCLUDE_METADATA = True
 PDF_FONT_FALLBACKS = ["Times-Roman", "Courier", "Symbol", "ZapfDingbats"]
+PDF_PRESERVE_LAYOUT = True  # Whether to preserve the original document layout
 
 # UI configuration
 UI_THEME = "light"  # "light" or "dark"
@@ -70,6 +71,7 @@ def get_default_config() -> Dict[str, Any]:
             "include_timestamp": PDF_INCLUDE_TIMESTAMP,
             "include_metadata": PDF_INCLUDE_METADATA,
             "font_fallbacks": PDF_FONT_FALLBACKS,
+            "preserve_layout": PDF_PRESERVE_LAYOUT,
         },
         "ui": {
             "theme": UI_THEME,
