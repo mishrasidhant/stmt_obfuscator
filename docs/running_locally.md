@@ -23,7 +23,7 @@ This guide provides step-by-step instructions for setting up and using the PDF B
 ### Required Hardware
 
 - **Operating System**: macOS (optimized for Apple Silicon M-series chips)
-- **Minimum Hardware**: 
+- **Minimum Hardware**:
   - 16GB RAM
   - 4-core CPU (Apple M1 or equivalent)
   - 500MB free disk space for the application
@@ -204,10 +204,12 @@ After running the main application command, the graphical user interface (GUI) w
    - The application will show the original document and the obfuscated version side by side
    - Note: There might be UI issues when highlighting PII entities in the preview
 
-5. **Save the Obfuscated Text**:
-   - Click the "Save Obfuscated Text" button
-   - Choose a location to save the obfuscated document as a text file
-   - Note: Currently, the application saves the obfuscated content as a text file. PDF generation will be implemented in a future version.
+5. **Save the Obfuscated Document**:
+   - Click the "Save Obfuscated Document" button
+   - Choose a location to save the obfuscated document
+   - Select the desired format (Text or PDF) from the dropdown menu
+   - Configure PDF export options if PDF format is selected
+   - Click "Save" to generate and save the document
 
 ## Using the RAG Features
 
@@ -425,3 +427,108 @@ After processing your document, evaluate the results by:
 ---
 
 By following this guide, you should be able to set up and run the PDF Bank Statement Obfuscator locally on your machine. If you encounter any issues not covered in this guide, please refer to the project's GitHub repository for additional support and resources.
+
+## PDF Export Functionality
+
+The PDF Bank Statement Obfuscator now supports exporting obfuscated statements as PDF files, preserving document structure while ensuring all PII is properly masked.
+
+### Using PDF Export
+
+To export your obfuscated document as a PDF:
+
+1. Process your bank statement as normal
+2. Review and edit the detected PII entities
+3. Click the "Save Obfuscated Document" button
+4. Select "PDF" from the format dropdown menu
+5. Configure PDF export options (if desired)
+6. Choose a location to save the file
+7. Click "Save" to generate the PDF
+
+### PDF Export Configuration Options
+
+The following options can be configured for PDF export:
+
+1. **Font Settings**:
+   - Font Family: Default is Helvetica
+   - Font Size: Default is 11pt
+   - Font Fallbacks: Automatically handles special characters with appropriate fonts
+
+2. **Layout Settings**:
+   - Layout Preservation: Maintains the original document's layout including columns, spacing, and positioning
+   - Layout Detail Level: Choose between Low, Medium, or High detail levels
+   - Margins: Default is 72pt (1 inch)
+   - Include timestamps: Enabled by default
+   - Include metadata: Enabled by default
+
+3. **Advanced Settings**:
+   - These settings can be modified in the application's configuration file at `~/.stmt_obfuscator/config.yaml`:
+     ```yaml
+     pdf_export:
+       enabled: true
+       default_font: "Helvetica"
+       font_size: 11
+       margin: 72
+       include_timestamp: true
+       include_metadata: true
+       preserve_layout: true
+       layout_detail_level: "medium"
+       font_fallbacks:
+         - "Times-Roman"
+         - "Courier"
+         - "Symbol"
+     ```
+
+### Key PDF Export Features
+
+1. **Advanced Layout Preservation**:
+   - Preserves the original document's layout, including columns, spacing, and positioning of elements
+   - Maintains text alignment (left, center, right)
+   - Identifies and properly positions headers and footers
+   - Falls back to standard formatting when layout preservation is not possible
+
+2. **Intelligent Text Wrapping**:
+   - Automatically wraps text within page margins
+   - Handles long words by splitting them across lines when necessary
+   - Preserves paragraph breaks with consistent spacing
+
+3. **Font Fallback System**:
+   - Automatically selects appropriate fonts for different character sets
+   - Ensures special characters and symbols are properly displayed
+   - Provides consistent rendering across different systems
+
+4. **Accurate Preview**:
+   - Preview in the UI exactly matches the final PDF output
+   - Supports multi-page document previews
+   - Offers configurable preview quality settings
+
+### PDF Export Limitations
+
+While the PDF export functionality works well for most bank statements, there are some limitations to be aware of:
+
+1. **Complex Tables**: Very complex tables may not maintain their exact original formatting
+2. **Large Documents**: Processing very large statements (>50 pages) may be slow
+3. **Unusual Fonts**: Documents with unusual or custom fonts may fall back to standard fonts
+
+For best results, review the generated PDF and adjust settings as needed for your specific documents.
+
+### Troubleshooting PDF Export
+
+If you encounter issues with PDF export:
+
+1. **PDF Generation Errors**:
+   - Check that PyMuPDF is properly installed: `pip install --upgrade pymupdf`
+   - Ensure you have write permissions for the output directory
+
+2. **Layout Preservation Issues**:
+   - Try adjusting the layout detail level (Low, Medium, High)
+   - For very complex layouts, try disabling layout preservation
+   - Check if the original PDF has selectable text (required for layout preservation)
+
+3. **Font Issues**:
+   - If special characters aren't displaying correctly, try adding additional font fallbacks
+   - For documents with unusual scripts, ensure appropriate fonts are installed on your system
+
+4. **Performance Issues**:
+   - For large documents, try using a lower layout detail level
+   - Disable metadata inclusion to reduce file size
+   - Close other applications to free up system resources

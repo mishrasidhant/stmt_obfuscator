@@ -5,6 +5,36 @@ All notable changes to the PDF Bank Statement Obfuscator will be documented in t
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-06-25
+
+### Added
+
+- **PDF Export Functionality**: Added the ability to export obfuscated bank statements as PDF files
+  - Customizable formatting options including font, font size, and margins
+  - Optional timestamps and metadata inclusion
+  - Page numbering and document structure preservation
+  - Header and footer customization
+
+### Improved
+
+- Enhanced text wrapping to respect page margins in PDF output
+- Added basic table detection and formatting for better readability
+- Implemented font fallbacks to handle special characters
+- Optimized processing for large files with chunking to reduce memory usage
+- Improved UI preview to more accurately represent the final PDF output
+
+### Fixed
+
+- Resolved issues with text extending beyond page margins
+- Fixed memory leaks when processing large documents
+- Addressed UI freezing during PDF generation for large files
+
+### Known Limitations
+
+- Complex table formatting may not be perfectly preserved
+- Processing very large statements (>50 pages) may be slow
+- Some special characters might not render correctly with all fonts
+
 ## [1.0.0] - 2025-06-25
 
 This is the initial release of the PDF Bank Statement Obfuscator, a privacy-focused desktop application designed to process bank statements while removing personally identifiable information (PII) with surgical precision.
